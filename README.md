@@ -19,7 +19,7 @@
 
 - Android 8.1(API 26)以降
 - USB接続にはOTGホストモードに対応した端末が必要
-- 対象ECU: Rover MEMS 1.3(SPi、シングルポイントインジェクション)
+- 対象ECU: Rover MEMS 1.3(SPi)/MEMS 1.6(MPI)。実車での動作確認はMEMS 1.3搭載車で実施
 
 ## ビルド方法
 
