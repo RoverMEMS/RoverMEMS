@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RoverMEMS</string>
+
+    <!-- Common actions, reused across screens -->
+    <string name="action_back">戻る</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_close">閉じる</string>
+    <string name="action_refresh">更新</string>
+    <string name="action_share">共有</string>
+    <string name="language_toggle">EN</string>
+    <string name="night_mode_toggle">夜間モード切替</string>
+
+    <!-- ConnectScreen -->
+    <string name="connect_title">ローバーミニ MEMS診断</string>
+    <string name="connect_select_source">データソースを選択してください</string>
+    <string name="connect_demo_mode">デモモード</string>
+    <string name="connect_usb">USB</string>
+    <string name="connect_bluetooth">Bluetooth</string>
+    <string name="connect_demo_description">実車やケーブルが無くても、サンプルデータでアプリの画面をお試しいただけます。</string>
+    <string name="connect_connecting">接続中…</string>
+    <string name="connect_start_demo">デモモードで開始</string>
+    <string name="connect_usb_not_found">USBシリアルアダプタが見つかりません。ケーブルの接続を確認してください。</string>
+    <string name="connect_usb_tap_device">接続するUSBアダプタをタップしてください。</string>
+    <string name="connect_ble_tap_device">周辺のBLEデバイスをタップして接続してください。</string>
+
+    <!-- GaugeScreen: general -->
+    <string name="gauge_waiting_data">データ待機中…</string>
+    <string name="gauge_mode_simple">シンプル</string>
+    <string name="gauge_live_data_title">MEMS ライブデータ</string>
+    <string name="gauge_mode_detailed">詳細</string>
+    <string name="gauge_mode_charts">グラフ</string>
+    <string name="gauge_mode_analog">アナログ</string>
+    <string name="gauge_clear_faults">エラーコードクリア</string>
+    <string name="gauge_actuator_tests">部品テスト</string>
+    <string name="gauge_log_stop">ログ停止</string>
+    <string name="gauge_log_start">ログ開始</string>
+    <string name="gauge_log_list">ログ一覧</string>
+    <string name="gauge_recording">記録中: %1$s</string>
+    <string name="gauge_disconnect">切断</string>
+
+    <!-- EcuStatusBadge -->
+    <string name="ecu_status_disconnected">未接続</string>
+    <string name="ecu_status_connecting">接続中…</string>
+    <string name="ecu_status_mems13">MEMS 1.3 検出</string>
+    <string name="ecu_status_mems16">MEMS 1.6 検出</string>
+    <string name="ecu_status_unknown">接続済み(ECU種別不明%1$s)</string>
+    <string name="ecu_status_unknown_id_suffix"> / ID: %1$s</string>
+    <string name="ecu_status_reconnecting">再接続中…</string>
+    <string name="ecu_status_error">接続エラー</string>
+
+    <!-- FaultSummaryBanner -->
+    <string name="fault_banner_has_fault">センサーエラーあり - 詳細画面で確認してください</string>
+    <string name="fault_banner_ok">センサーエラーなし</string>
+
+    <!-- AnalogGaugeGrid fault indicator lamps (short labels, small on-screen space) -->
+    <string name="analog_fault_coolant">水温</string>
+    <string name="analog_fault_intake">吸気</string>
+    <string name="analog_fault_fuel">燃料</string>
+    <string name="analog_fault_throttle">スロットル</string>
+
+    <!-- Simple gauge grid metric labels -->
+    <string name="metric_rpm">RPM</string>
+    <string name="metric_map">MAP(kPa)</string>
+    <string name="metric_tps">TPS(V)</string>
+    <string name="metric_coolant">水温(C)</string>
+    <string name="metric_intake">吸気温(C)</string>
+    <string name="metric_battery">Bat(V)</string>
+    <string name="metric_ignition">点火進角</string>
+    <string name="metric_lambda">Lambda(mV)</string>
+    <string name="metric_fuel_trim">燃料トリム(%)</string>
+
+    <!-- MetricPickerDialog / GaugeInfoDialog -->
+    <string name="dialog_select_gauge">表示するメーターを選択</string>
+    <string name="gauge_info_no_description">説明はまだありません。</string>
+
+    <!-- DetailedDataList row labels -->
+    <string name="detail_rpm">回転数</string>
+    <string name="detail_coolant">水温</string>
+    <string name="detail_intake_temp">吸気温度</string>
+    <string name="detail_map">MAP</string>
+    <string name="detail_throttle_voltage">スロットル電圧</string>
+    <string name="detail_throttle_angle">スロットル開度</string>
+    <string name="detail_idle_deviation">アイドル回転偏差</string>
+    <string name="detail_lambda_voltage">ラムダ電圧</string>
+    <string name="detail_iac_position">IACポジション</string>
+    <string name="detail_battery_voltage">バッテリー電圧</string>
+    <string name="detail_afr">空燃比</string>
+    <string name="detail_lambda_freq">ラムダセンサー周波数</string>
+    <string name="detail_lambda_duty">ラムダセンサーデューティ比</string>
+    <string name="detail_lambda_status">ラムダセンサー状態</string>
+    <string name="detail_closed_loop">クローズドループ</string>
+    <string name="detail_idle_base_pos">アイドルベース位置</string>
+    <string name="detail_idle_error">アイドルエラー</string>
+    <string name="detail_fuel_trim_long">燃料トリム(長期)</string>
+    <string name="detail_fuel_trim_short">燃料トリム(短期)</string>
+    <string name="detail_canister_duty">キャニスターパージデューティ比</string>
+    <string name="detail_idle_switch">アイドルスイッチ</string>
+    <string name="detail_park_neutral">パーキング/ニュートラルスイッチ</string>
+    <string name="detail_coil_time">コイル時間</string>
+    <string name="status_enabled">有効</string>
+    <string name="status_disabled">無効</string>
+
+    <!-- DetailedDataList fault rows -->
+    <string name="detail_fault_section_title">センサーエラー診断</string>
+    <string name="fault_coolant_sensor">水温センサーエラー</string>
+    <string name="fault_intake_sensor">吸気温度センサーエラー</string>
+    <string name="fault_fuel_pump_circuit">燃料ポンプ回路エラー</string>
+    <string name="fault_throttle_pot_circuit">スロットルポット回路エラー</string>
+    <string name="fault_row_has_error">エラーあり</string>
+    <string name="fault_row_normal">正常</string>
+
+    <!-- ChartsView -->
+    <string name="charts_not_enough_data">グラフに表示するデータがまだ足りません</string>
+    <string name="chart_rpm">回転数(rpm)</string>
+    <string name="chart_coolant">水温(°C)</string>
+    <string name="chart_intake">吸気温度(°C)</string>
+    <string name="chart_map">MAP(kPa)</string>
+    <string name="chart_battery">バッテリー電圧(V)</string>
+    <string name="chart_ignition">点火進角(°)</string>
+    <string name="chart_lambda">ラムダ電圧(mV)</string>
+
+    <!-- GaugeMetricInfo popups -->
+    <string name="info_rpm_desc">エンジンの回転数(1分間あたりの回転数)です。</string>
+    <string name="info_rpm_range">目安: アイドリング中は750〜1000rpm程度</string>
+    <string name="info_map_desc">吸気マニホールド内の圧力です。数値が低いほど負圧(スロットルが閉じている)、大気圧(約100kPa)に近いほどアクセル全開に近い状態です。</string>
+    <string name="info_map_range">目安: アイドリング中は25〜45kPa、全開付近で90kPa以上</string>
+    <string name="info_tps_desc">スロットルポジションセンサー(アクセル開度)の電圧です。</string>
+    <string name="info_tps_range">目安: アクセルを離した状態で0.3〜0.7V、全開でおよそ4.0V以上</string>
+    <string name="info_coolant_desc">エンジン冷却水の温度です。この値の換算式(生の値-55)は未確認のため、実車で一度確認をおすすめします。</string>
+    <string name="info_coolant_range">目安: 暖機完了後は80〜105°C。それを大きく超える場合はオーバーヒートの兆候です。</string>
+    <string name="info_intake_desc">エンジンに吸い込む空気の温度です。外気温+エンジン熱の影響を受けます。</string>
+    <string name="info_intake_range">目安: 外気温〜外気温+30°C程度</string>
+    <string name="info_battery_desc">バッテリー電圧です。エンジン停止中と始動中で目安が変わります。</string>
+    <string name="info_battery_range">目安: エンジン停止中12.0〜12.8V、始動中(充電中)13.5〜14.8V</string>
+    <string name="info_ignition_desc">点火タイミング(上死点より何度手前で点火するか)です。回転数や負荷で変動します。</string>
+    <string name="info_ignition_range">目安: アイドリング中は5〜15°程度</string>
+    <string name="info_lambda_desc">O2(酸素)センサーの電圧です。クローズドループ制御中は0〜1000mVの間で細かく上下に振れるのが正常です。</string>
+    <string name="info_lambda_range">目安: 平均でおよそ450mV付近を振れながら変動</string>
+    <string name="info_fuel_trim_desc">ECUが基本の燃料噴射量をどれだけ補正しているかです。100%が「補正なし」の基準値です。</string>
+    <string name="info_fuel_trim_range">目安: 85〜115%程度。これを大きく外れる場合は燃料系統やセンサーの点検をおすすめします。</string>
+
+    <!-- GaugeViewModel -->
+    <string name="clear_faults_success">エラーコードをクリアしました</string>
+    <string name="clear_faults_failure">クリアに失敗しました</string>
+
+    <!-- LogListScreen -->
+    <string name="logs_title">記録済みログ</string>
+    <string name="logs_folder_note">ダウンロード/RoverMEMS フォルダに保存されたログです</string>
+    <string name="logs_empty">まだログがありません</string>
+    <string name="logs_view_chart">グラフで見る</string>
+    <string name="logs_share_chooser_title">ログを共有</string>
+
+    <!-- LogChartScreen -->
+    <string name="logchart_loading">読み込み中…</string>
+    <string name="logchart_no_data">グラフに表示できるデータがありません</string>
+    <string name="col_engine_speed">回転数(rpm)</string>
+    <string name="col_water_temp">水温(°C)</string>
+    <string name="col_intake_air_temp">吸気温度(°C)</string>
+    <string name="col_throttle_voltage">スロットル電圧(V)</string>
+    <string name="col_manifold_pressure">MAP(kPa)</string>
+    <string name="col_iac_position">IACポジション</string>
+    <string name="col_battery_voltage">バッテリー電圧(V)</string>
+    <string name="col_lambda_voltage">ラムダ電圧(mV)</string>
+
+    <!-- ActuatorTestScreen -->
+    <string name="actuator_title">部品テスト</string>
+    <string name="actuator_description">MEMS ECUは各部品・センサーを手動でテストする機能に対応しています。操作するとリレーがカチッと鳴ったり燃料ポンプが動いたりします。</string>
+    <string name="actuator_can_test">エンジン停止中: テスト可能です</string>
+    <string name="actuator_cannot_test">エンジン停止中のみテストできます</string>
+    <string name="actuator_run_test">テスト実行</string>
+    <string name="actuator_on">ON</string>
+    <string name="actuator_off">OFF</string>
+    <string name="actuator_result_success">%1$s: 実行しました</string>
+    <string name="actuator_result_failure">%1$s: 実行に失敗しました</string>
+
+    <!-- ActuatorControls labels -->
+    <string name="actuator_fuel_pump">燃料ポンプ</string>
+    <string name="actuator_manifold_heater">マニホールドヒーター</string>
+    <string name="actuator_ac">エアコン</string>
+    <string name="actuator_purge_valve">パージバルブ</string>
+    <string name="actuator_lambda_heater">ラムダヒーター</string>
+    <string name="actuator_fan1">ファン1</string>
+    <string name="actuator_fan2">ファン2</string>
+    <string name="actuator_injector">インジェクター</string>
+    <string name="actuator_ignition_coil">イグニッションコイル</string>
+
+    <!-- DataLogger -->
+    <string name="download_folder_name">ダウンロード</string>
+</resources>

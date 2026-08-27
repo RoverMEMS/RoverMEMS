@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RoverMEMS</string>
+
+    <!-- Common actions, reused across screens -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_share">Share</string>
+    <string name="language_toggle">JA</string>
+    <string name="night_mode_toggle">Toggle night mode</string>
+
+    <!-- ConnectScreen -->
+    <string name="connect_title">Rover Mini MEMS Diagnostics</string>
+    <string name="connect_select_source">Select a data source</string>
+    <string name="connect_demo_mode">Demo Mode</string>
+    <string name="connect_usb">USB</string>
+    <string name="connect_bluetooth">Bluetooth</string>
+    <string name="connect_demo_description">Try the app\'s screens with sample data, even without a real car or cable.</string>
+    <string name="connect_connecting">Connecting…</string>
+    <string name="connect_start_demo">Start Demo Mode</string>
+    <string name="connect_usb_not_found">No USB serial adapter found. Please check the cable connection.</string>
+    <string name="connect_usb_tap_device">Tap the USB adapter to connect.</string>
+    <string name="connect_ble_tap_device">Tap a nearby BLE device to connect.</string>
+
+    <!-- GaugeScreen: general -->
+    <string name="gauge_waiting_data">Waiting for data…</string>
+    <string name="gauge_mode_simple">Simple</string>
+    <string name="gauge_live_data_title">MEMS Live Data</string>
+    <string name="gauge_mode_detailed">Detailed</string>
+    <string name="gauge_mode_charts">Charts</string>
+    <string name="gauge_mode_analog">Analog</string>
+    <string name="gauge_clear_faults">Clear Fault Codes</string>
+    <string name="gauge_actuator_tests">Component Test</string>
+    <string name="gauge_log_stop">Stop Logging</string>
+    <string name="gauge_log_start">Start Logging</string>
+    <string name="gauge_log_list">Log List</string>
+    <string name="gauge_recording">Recording: %1$s</string>
+    <string name="gauge_disconnect">Disconnect</string>
+
+    <!-- EcuStatusBadge -->
+    <string name="ecu_status_disconnected">Disconnected</string>
+    <string name="ecu_status_connecting">Connecting…</string>
+    <string name="ecu_status_mems13">MEMS 1.3 Detected</string>
+    <string name="ecu_status_mems16">MEMS 1.6 Detected</string>
+    <string name="ecu_status_unknown">Connected (Unknown ECU type%1$s)</string>
+    <string name="ecu_status_unknown_id_suffix"> / ID: %1$s</string>
+    <string name="ecu_status_reconnecting">Reconnecting…</string>
+    <string name="ecu_status_error">Connection Error</string>
+
+    <!-- FaultSummaryBanner -->
+    <string name="fault_banner_has_fault">Sensor error detected - check the Detailed screen</string>
+    <string name="fault_banner_ok">No sensor errors</string>
+
+    <!-- AnalogGaugeGrid fault indicator lamps (short labels, small on-screen space) -->
+    <string name="analog_fault_coolant">Coolant</string>
+    <string name="analog_fault_intake">Intake</string>
+    <string name="analog_fault_fuel">Fuel</string>
+    <string name="analog_fault_throttle">Throttle</string>
+
+    <!-- Simple gauge grid metric labels -->
+    <string name="metric_rpm">RPM</string>
+    <string name="metric_map">MAP(kPa)</string>
+    <string name="metric_tps">TPS(V)</string>
+    <string name="metric_coolant">Coolant(C)</string>
+    <string name="metric_intake">Intake(C)</string>
+    <string name="metric_battery">Bat(V)</string>
+    <string name="metric_ignition">Ign. Advance</string>
+    <string name="metric_lambda">Lambda(mV)</string>
+    <string name="metric_fuel_trim">Fuel Trim(%)</string>
+
+    <!-- MetricPickerDialog / GaugeInfoDialog -->
+    <string name="dialog_select_gauge">Select gauge to display</string>
+    <string name="gauge_info_no_description">No description yet.</string>
+
+    <!-- DetailedDataList row labels -->
+    <string name="detail_rpm">Engine Speed</string>
+    <string name="detail_coolant">Coolant Temp</string>
+    <string name="detail_intake_temp">Intake Air Temp</string>
+    <string name="detail_map">MAP</string>
+    <string name="detail_throttle_voltage">Throttle Voltage</string>
+    <string name="detail_throttle_angle">Throttle Angle</string>
+    <string name="detail_idle_deviation">Idle Speed Deviation</string>
+    <string name="detail_lambda_voltage">Lambda Voltage</string>
+    <string name="detail_iac_position">IAC Position</string>
+    <string name="detail_battery_voltage">Battery Voltage</string>
+    <string name="detail_afr">Air/Fuel Ratio</string>
+    <string name="detail_lambda_freq">Lambda Sensor Frequency</string>
+    <string name="detail_lambda_duty">Lambda Sensor Duty Cycle</string>
+    <string name="detail_lambda_status">Lambda Sensor Status</string>
+    <string name="detail_closed_loop">Closed Loop</string>
+    <string name="detail_idle_base_pos">Idle Base Position</string>
+    <string name="detail_idle_error">Idle Error</string>
+    <string name="detail_fuel_trim_long">Fuel Trim (Long)</string>
+    <string name="detail_fuel_trim_short">Fuel Trim (Short)</string>
+    <string name="detail_canister_duty">Canister Purge Duty Cycle</string>
+    <string name="detail_idle_switch">Idle Switch</string>
+    <string name="detail_park_neutral">Park/Neutral Switch</string>
+    <string name="detail_coil_time">Coil Time</string>
+    <string name="status_enabled">Enabled</string>
+    <string name="status_disabled">Disabled</string>
+
+    <!-- DetailedDataList fault rows -->
+    <string name="detail_fault_section_title">Sensor Error Diagnostics</string>
+    <string name="fault_coolant_sensor">Coolant Sensor Error</string>
+    <string name="fault_intake_sensor">Intake Temp Sensor Error</string>
+    <string name="fault_fuel_pump_circuit">Fuel Pump Circuit Error</string>
+    <string name="fault_throttle_pot_circuit">Throttle Pot Circuit Error</string>
+    <string name="fault_row_has_error">Error</string>
+    <string name="fault_row_normal">Normal</string>
+
+    <!-- ChartsView -->
+    <string name="charts_not_enough_data">Not enough data yet to show a chart</string>
+    <string name="chart_rpm">Engine Speed (rpm)</string>
+    <string name="chart_coolant">Coolant (°C)</string>
+    <string name="chart_intake">Intake Temp (°C)</string>
+    <string name="chart_map">MAP (kPa)</string>
+    <string name="chart_battery">Battery Voltage (V)</string>
+    <string name="chart_ignition">Ignition Advance (°)</string>
+    <string name="chart_lambda">Lambda Voltage (mV)</string>
+
+    <!-- GaugeMetricInfo popups -->
+    <string name="info_rpm_desc">Engine speed, in revolutions per minute.</string>
+    <string name="info_rpm_range">Typical: around 750-1000 rpm at idle</string>
+    <string name="info_map_desc">Pressure inside the intake manifold. Lower means more vacuum (throttle closed); closer to atmospheric (about 100kPa) means closer to wide-open throttle.</string>
+    <string name="info_map_range">Typical: 25-45kPa at idle, 90kPa+ near wide-open throttle</string>
+    <string name="info_tps_desc">Throttle position sensor voltage (accelerator opening).</string>
+    <string name="info_tps_range">Typical: 0.3-0.7V with foot off the pedal, about 4.0V+ at wide open</string>
+    <string name="info_coolant_desc">Engine coolant temperature. The conversion formula for this value (raw - 55) hasn\'t been verified yet, so a one-time check against the real car is recommended.</string>
+    <string name="info_coolant_range">Typical: 80-105°C once warmed up. Well above that is a sign of overheating.</string>
+    <string name="info_intake_desc">Temperature of the air drawn into the engine. Affected by outside air temperature plus engine heat.</string>
+    <string name="info_intake_range">Typical: roughly outside air temp up to outside air temp + 30°C</string>
+    <string name="info_battery_desc">Battery voltage. The typical range differs between engine off and running.</string>
+    <string name="info_battery_range">Typical: 12.0-12.8V engine off, 13.5-14.8V running (charging)</string>
+    <string name="info_ignition_desc">Ignition timing (how many degrees before top dead center it fires). Varies with rpm and load.</string>
+    <string name="info_ignition_range">Typical: roughly 5-15° at idle</string>
+    <string name="info_lambda_desc">O2 (oxygen) sensor voltage. Fine, continuous swings between 0-1000mV are normal while in closed-loop control.</string>
+    <string name="info_lambda_range">Typical: swinging around an average of roughly 450mV</string>
+    <string name="info_fuel_trim_desc">How much the ECU is correcting the base fuel injection amount. 100% is the "no correction" baseline.</string>
+    <string name="info_fuel_trim_range">Typical: roughly 85-115%. Well outside that range suggests checking the fuel system or sensors.</string>
+
+    <!-- GaugeViewModel -->
+    <string name="clear_faults_success">Fault codes cleared</string>
+    <string name="clear_faults_failure">Clear failed</string>
+
+    <!-- LogListScreen -->
+    <string name="logs_title">Saved Logs</string>
+    <string name="logs_folder_note">Logs are saved in the Download/RoverMEMS folder</string>
+    <string name="logs_empty">No logs yet</string>
+    <string name="logs_view_chart">View Chart</string>
+    <string name="logs_share_chooser_title">Share log</string>
+
+    <!-- LogChartScreen -->
+    <string name="logchart_loading">Loading…</string>
+    <string name="logchart_no_data">No data available to chart</string>
+    <string name="col_engine_speed">Engine Speed (rpm)</string>
+    <string name="col_water_temp">Coolant (°C)</string>
+    <string name="col_intake_air_temp">Intake Temp (°C)</string>
+    <string name="col_throttle_voltage">Throttle Voltage (V)</string>
+    <string name="col_manifold_pressure">MAP (kPa)</string>
+    <string name="col_iac_position">IAC Position</string>
+    <string name="col_battery_voltage">Battery Voltage (V)</string>
+    <string name="col_lambda_voltage">Lambda Voltage (mV)</string>
+
+    <!-- ActuatorTestScreen -->
+    <string name="actuator_title">Component Test</string>
+    <string name="actuator_description">The MEMS ECU supports manually testing individual components and sensors. Running a test may click a relay or run the fuel pump.</string>
+    <string name="actuator_can_test">Engine stopped: tests available</string>
+    <string name="actuator_cannot_test">Tests are only available while the engine is stopped</string>
+    <string name="actuator_run_test">Run Test</string>
+    <string name="actuator_on">ON</string>
+    <string name="actuator_off">OFF</string>
+    <string name="actuator_result_success">%1$s: Done</string>
+    <string name="actuator_result_failure">%1$s: Failed</string>
+
+    <!-- ActuatorControls labels -->
+    <string name="actuator_fuel_pump">Fuel Pump</string>
+    <string name="actuator_manifold_heater">Manifold Heater</string>
+    <string name="actuator_ac">A/C</string>
+    <string name="actuator_purge_valve">Purge Valve</string>
+    <string name="actuator_lambda_heater">Lambda Heater</string>
+    <string name="actuator_fan1">Fan 1</string>
+    <string name="actuator_fan2">Fan 2</string>
+    <string name="actuator_injector">Injector</string>
+    <string name="actuator_ignition_coil">Ignition Coil</string>
+
+    <!-- DataLogger -->
+    <string name="download_folder_name">Download</string>
+</resources>
