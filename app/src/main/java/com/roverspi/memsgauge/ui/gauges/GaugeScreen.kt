@@ -14,6 +14,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -305,7 +307,9 @@ private fun GaugeScreenContent(
             data?.let { FaultSummaryBanner(it, modifier = Modifier.padding(top = 8.dp)) }
 
             Row(
-                modifier = Modifier.padding(vertical = 12.dp),
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(onClick = { mode = DisplayMode.SIMPLE }) { Text(stringResource(R.string.gauge_mode_simple)) }
@@ -946,14 +950,14 @@ private fun AnalogFaultIndicators(data: MemsData, modifier: Modifier = Modifier)
     Column(
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
-            .padding(6.dp),
+            .padding(9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         lamps.forEach { (icon, description, isFaulty) ->
             Box(
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(33.dp)
                     .background(color = if (isFaulty) FaultRed else OkGreen, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -961,7 +965,7 @@ private fun AnalogFaultIndicators(data: MemsData, modifier: Modifier = Modifier)
                     imageVector = icon,
                     contentDescription = description,
                     tint = Color.White,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(21.dp)
                 )
             }
         }
