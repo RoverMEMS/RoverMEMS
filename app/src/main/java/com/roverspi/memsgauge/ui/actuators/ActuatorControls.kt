@@ -12,7 +12,13 @@ import com.roverspi.memsgauge.protocol.MemsActuatorCommand
 data class ActuatorControl(
     @StringRes val labelRes: Int,
     val onCommand: MemsActuatorCommand,
-    val offCommand: MemsActuatorCommand?
+    val offCommand: MemsActuatorCommand?,
+    // 実車テストでFan1/Fan2だけ動作しないことが確認済み(このミニはECU経由
+    // ではなく水温サーモスイッチで直接ファンリレーを駆動する配線のため、
+    // ECU側にファン出力自体が実装されていないと推測)。コマンドバイト自体は
+    // 他ソースと一致確認済みでアプリのバグではないので、テスト有効時でも
+    // 常にグレーアウトして誤操作・誤解を防ぐ。
+    val alwaysDisabled: Boolean = false
 )
 
 /**
@@ -27,8 +33,8 @@ val ACTUATOR_CONTROLS = listOf(
     ActuatorControl(R.string.actuator_ac, MemsActuatorCommand.AC_RELAY_ON, MemsActuatorCommand.AC_RELAY_OFF),
     ActuatorControl(R.string.actuator_purge_valve, MemsActuatorCommand.PURGE_VALVE_ON, MemsActuatorCommand.PURGE_VALVE_OFF),
     ActuatorControl(R.string.actuator_lambda_heater, MemsActuatorCommand.O2_HEATER_ON, MemsActuatorCommand.O2_HEATER_OFF),
-    ActuatorControl(R.string.actuator_fan1, MemsActuatorCommand.FAN1_ON, MemsActuatorCommand.FAN1_OFF),
-    ActuatorControl(R.string.actuator_fan2, MemsActuatorCommand.FAN2_ON, MemsActuatorCommand.FAN2_OFF),
+    ActuatorControl(R.string.actuator_fan1, MemsActuatorCommand.FAN1_ON, MemsActuatorCommand.FAN1_OFF, alwaysDisabled = true),
+    ActuatorControl(R.string.actuator_fan2, MemsActuatorCommand.FAN2_ON, MemsActuatorCommand.FAN2_OFF, alwaysDisabled = true),
     ActuatorControl(R.string.actuator_injector, MemsActuatorCommand.TEST_INJECTORS, null),
     ActuatorControl(R.string.actuator_ignition_coil, MemsActuatorCommand.FIRE_COIL, null)
 )

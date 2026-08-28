@@ -14,8 +14,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +42,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material3.AlertDialog
@@ -52,6 +51,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -80,7 +83,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -197,6 +202,7 @@ private fun GaugeScreenContent(
     initialMode: DisplayMode = DisplayMode.SIMPLE
 ) {
     var mode by remember { mutableStateOf(initialMode) }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     if (clearFaultsMessage != null) {
         LaunchedEffect(clearFaultsMessage) {
@@ -289,10 +295,42 @@ private fun GaugeScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.gauge_live_data_title)) },
+                title = { EcuStatusBadge(connectionState, ecuVersion, ecuIdRaw) },
                 actions = {
                     LanguageToggleButton()
                     NightModeToggleButton()
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.gauge_menu_more))
+                        }
+                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_mode_simple)) },
+                                onClick = { mode = DisplayMode.SIMPLE; menuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_mode_detailed)) },
+                                onClick = { mode = DisplayMode.DETAILED; menuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_mode_charts)) },
+                                onClick = { mode = DisplayMode.CHARTS; menuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_mode_analog)) },
+                                onClick = { mode = DisplayMode.ANALOG; menuExpanded = false }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_actuator_tests)) },
+                                onClick = { onOpenActuatorTests(); menuExpanded = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.gauge_log_list)) },
+                                onClick = { onOpenLogs(); menuExpanded = false }
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -303,37 +341,24 @@ private fun GaugeScreenContent(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            EcuStatusBadge(connectionState, ecuVersion, ecuIdRaw, modifier = Modifier.padding(top = 12.dp))
-            data?.let { FaultSummaryBanner(it, modifier = Modifier.padding(top = 8.dp)) }
+            data?.let { FaultSummaryBanner(it) }
 
             Row(
                 modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .horizontalScroll(rememberScrollState()),
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = { mode = DisplayMode.SIMPLE }) { Text(stringResource(R.string.gauge_mode_simple)) }
-                Button(onClick = { mode = DisplayMode.DETAILED }) { Text(stringResource(R.string.gauge_mode_detailed)) }
-                Button(onClick = { mode = DisplayMode.CHARTS }) { Text(stringResource(R.string.gauge_mode_charts)) }
-                Button(onClick = { mode = DisplayMode.ANALOG }) { Text(stringResource(R.string.gauge_mode_analog)) }
-            }
-
-            Row(
-                modifier = Modifier.padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = onClearFaults) { Text(stringResource(R.string.gauge_clear_faults)) }
-                Button(onClick = onOpenActuatorTests) { Text(stringResource(R.string.gauge_actuator_tests)) }
-            }
-
-            Row(
-                modifier = Modifier.padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = onToggleLogging) {
-                    Text(stringResource(if (isLogging) R.string.gauge_log_stop else R.string.gauge_log_start))
+                Button(onClick = onClearFaults, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.gauge_clear_faults), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Button(onClick = onOpenLogs) { Text(stringResource(R.string.gauge_log_list)) }
+                Button(onClick = onToggleLogging, modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(if (isLogging) R.string.gauge_log_stop else R.string.gauge_log_start),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             if (isLogging && logFilePath != null) {
@@ -405,13 +430,13 @@ private fun EcuStatusBadge(
         ConnectionState.RECONNECTING -> stringResource(R.string.ecu_status_reconnecting)
         ConnectionState.ERROR -> stringResource(R.string.ecu_status_error)
     }
-    Card(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.titleMedium
-        )
-    }
+    Text(
+        text = label,
+        modifier = modifier,
+        style = MaterialTheme.typography.titleSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
 }
 
 /**
@@ -431,16 +456,18 @@ private fun FaultSummaryBanner(data: MemsData, modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FaultLamp(isOn = hasFault, litColor = Color.White)
+            FaultLamp(isOn = hasFault, litColor = Color.White, size = 10.dp)
             Text(
                 text = stringResource(if (hasFault) R.string.fault_banner_has_fault else R.string.fault_banner_ok),
                 color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp)
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 6.dp)
             )
         }
     }
@@ -448,10 +475,10 @@ private fun FaultSummaryBanner(data: MemsData, modifier: Modifier = Modifier) {
 
 /** Small round lamp, lit ([litColor]) or unlit (gray) -- same idea as MEMSGauge's QLedIndicator widgets. */
 @Composable
-private fun FaultLamp(isOn: Boolean, litColor: Color = FaultRed) {
+private fun FaultLamp(isOn: Boolean, litColor: Color = FaultRed, size: Dp = 16.dp) {
     Box(
         modifier = Modifier
-            .size(16.dp)
+            .size(size)
             .background(color = if (isOn) litColor else LampOffGray, shape = CircleShape)
     )
 }
@@ -480,19 +507,34 @@ private fun SimpleGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
     )
     var infoDialogFor by remember { mutableStateOf<GaugeMetric?>(null) }
 
-    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = modifier) {
+    // 2列(5段)で統一。上部のチラーム(タイトルバー・ボタン類)を大幅に
+    // 削減したことで縦の表示領域が増えたため、スマホでもカードを少し
+    // 小さめにしておけば2列のまま1画面に収まる。
+    val isTablet = LocalConfiguration.current.smallestScreenWidthDp >= TABLET_WIDTH_BREAKPOINT.value
+    val columns = 2
+    val cardPadding = if (isTablet) 6.dp else 3.dp
+    val cardContentPadding = if (isTablet) 12.dp else 6.dp
+    val labelStyle = if (isTablet) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall
+    val valueStyle = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium
+
+    LazyVerticalGrid(columns = GridCells.Fixed(columns), modifier = modifier) {
         items(gauges) { (metric, value) ->
-            Card(modifier = Modifier.padding(6.dp)) {
-                Column(modifier = Modifier.padding(12.dp)) {
+            Card(modifier = Modifier.padding(cardPadding)) {
+                Column(modifier = Modifier.padding(cardContentPadding)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(SIMPLE_GAUGE_METRIC_INFO.getValue(metric).labelRes), style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            stringResource(SIMPLE_GAUGE_METRIC_INFO.getValue(metric).labelRes),
+                            style = labelStyle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         InfoButton(onClick = { infoDialogFor = metric })
                     }
-                    Text(value, style = MaterialTheme.typography.headlineSmall)
+                    Text(value, style = valueStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -947,17 +989,22 @@ private fun AnalogFaultIndicators(data: MemsData, modifier: Modifier = Modifier)
         Triple(Icons.Filled.LocalGasStation, stringResource(R.string.analog_fault_fuel), data.fuelPumpCircuitFault),
         Triple(Icons.Filled.Bolt, stringResource(R.string.analog_fault_throttle), data.throttlePotCircuitFault)
     )
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
-            .padding(9.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(9.dp)
-    ) {
+
+    // タブレット(2x2ゲージ)は右上に十分な余白があるので縦並びのまま。
+    // スマホ(2x1ゲージ)はダイヤルが画面いっぱいに近いサイズになり、右上の
+    // 余白がゲージ上部の細い帯しか残らないため、縦に積むと文字盤に被って
+    // しまう。横並びの小さいアイコン列にして、その細い帯の中に収める。
+    val isTablet = LocalConfiguration.current.smallestScreenWidthDp >= TABLET_WIDTH_BREAKPOINT.value
+    val lampSize = if (isTablet) 33.dp else 22.dp
+    val iconSize = if (isTablet) 21.dp else 14.dp
+    val spacing = if (isTablet) 9.dp else 4.dp
+    val containerPadding = if (isTablet) 9.dp else 4.dp
+
+    val lampContent: @Composable () -> Unit = {
         lamps.forEach { (icon, description, isFaulty) ->
             Box(
                 modifier = Modifier
-                    .size(33.dp)
+                    .size(lampSize)
                     .background(color = if (isFaulty) FaultRed else OkGreen, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -965,10 +1012,30 @@ private fun AnalogFaultIndicators(data: MemsData, modifier: Modifier = Modifier)
                     imageVector = icon,
                     contentDescription = description,
                     tint = Color.White,
-                    modifier = Modifier.size(21.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
         }
+    }
+
+    val containerModifier = modifier
+        .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+        .padding(containerPadding)
+
+    if (isTablet) {
+        Column(
+            modifier = containerModifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            content = { lampContent() }
+        )
+    } else {
+        Row(
+            modifier = containerModifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            content = { lampContent() }
+        )
     }
 }
 

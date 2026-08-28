@@ -31,11 +31,12 @@
     <string name="gauge_mode_detailed">Detailed</string>
     <string name="gauge_mode_charts">Charts</string>
     <string name="gauge_mode_analog">Analog</string>
-    <string name="gauge_clear_faults">Clear Fault Codes</string>
+    <string name="gauge_clear_faults">Clear Errors</string>
     <string name="gauge_actuator_tests">Component Test</string>
     <string name="gauge_log_stop">Stop Logging</string>
     <string name="gauge_log_start">Start Logging</string>
     <string name="gauge_log_list">Log List</string>
+    <string name="gauge_menu_more">More options</string>
     <string name="gauge_recording">Recording: %1$s</string>
     <string name="gauge_disconnect">Disconnect</string>
 
@@ -50,7 +51,7 @@
     <string name="ecu_status_error">Connection Error</string>
 
     <!-- FaultSummaryBanner -->
-    <string name="fault_banner_has_fault">Sensor error detected - check the Detailed screen</string>
+    <string name="fault_banner_has_fault">Sensor error - see Detailed</string>
     <string name="fault_banner_ok">No sensor errors</string>
 
     <!-- AnalogGaugeGrid fault indicator lamps (short labels, small on-screen space) -->
@@ -165,9 +166,9 @@
 
     <!-- ActuatorTestScreen -->
     <string name="actuator_title">Component Test</string>
-    <string name="actuator_description">The MEMS ECU supports manually testing individual components and sensors. Running a test may click a relay or run the fuel pump.</string>
-    <string name="actuator_can_test">Engine stopped: tests available</string>
-    <string name="actuator_cannot_test">Tests are only available while the engine is stopped</string>
+    <string name="actuator_description">Manually test individual components and sensors. Turning one ON should click the relay if it\'s working.</string>
+    <string name="actuator_can_test">Tests available</string>
+    <string name="actuator_cannot_test">Engine must be stopped</string>
     <string name="actuator_run_test">Run Test</string>
     <string name="actuator_on">ON</string>
     <string name="actuator_off">OFF</string>

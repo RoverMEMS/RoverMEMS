@@ -31,11 +31,12 @@
     <string name="gauge_mode_detailed">詳細</string>
     <string name="gauge_mode_charts">グラフ</string>
     <string name="gauge_mode_analog">アナログ</string>
-    <string name="gauge_clear_faults">エラーコードクリア</string>
+    <string name="gauge_clear_faults">エラークリア</string>
     <string name="gauge_actuator_tests">部品テスト</string>
     <string name="gauge_log_stop">ログ停止</string>
     <string name="gauge_log_start">ログ開始</string>
     <string name="gauge_log_list">ログ一覧</string>
+    <string name="gauge_menu_more">その他のメニュー</string>
     <string name="gauge_recording">記録中: %1$s</string>
     <string name="gauge_disconnect">切断</string>
 
@@ -50,7 +51,7 @@
     <string name="ecu_status_error">接続エラー</string>
 
     <!-- FaultSummaryBanner -->
-    <string name="fault_banner_has_fault">センサーエラーあり - 詳細画面で確認してください</string>
+    <string name="fault_banner_has_fault">センサーエラー・詳細を確認</string>
     <string name="fault_banner_ok">センサーエラーなし</string>
 
     <!-- AnalogGaugeGrid fault indicator lamps (short labels, small on-screen space) -->
@@ -165,9 +166,9 @@
 
     <!-- ActuatorTestScreen -->
     <string name="actuator_title">部品テスト</string>
-    <string name="actuator_description">MEMS ECUは各部品・センサーを手動でテストする機能に対応しています。操作するとリレーがカチッと鳴ったり燃料ポンプが動いたりします。</string>
-    <string name="actuator_can_test">エンジン停止中: テスト可能です</string>
-    <string name="actuator_cannot_test">エンジン停止中のみテストできます</string>
+    <string name="actuator_description">各部品・センサーを手動でテストできます。ONにすると正常ならリレーの動作音がします。</string>
+    <string name="actuator_can_test">テスト可能</string>
+    <string name="actuator_cannot_test">エンジン停止時のみ</string>
     <string name="actuator_run_test">テスト実行</string>
     <string name="actuator_on">ON</string>
     <string name="actuator_off">OFF</string>
@@ -176,7 +177,7 @@
 
     <!-- ActuatorControls labels -->
     <string name="actuator_fuel_pump">燃料ポンプ</string>
-    <string name="actuator_manifold_heater">マニホールドヒーター</string>
+    <string name="actuator_manifold_heater">マニホールド\nヒーター</string>
     <string name="actuator_ac">エアコン</string>
     <string name="actuator_purge_valve">パージバルブ</string>
     <string name="actuator_lambda_heater">ラムダヒーター</string>

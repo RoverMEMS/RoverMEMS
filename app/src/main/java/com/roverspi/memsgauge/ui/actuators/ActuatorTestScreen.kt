@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -84,11 +85,13 @@ private fun ActuatorTestScreenContent(
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
                         stringResource(R.string.actuator_description),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
                         stringResource(if (testsEnabled) R.string.actuator_can_test else R.string.actuator_cannot_test),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (testsEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
@@ -122,6 +125,7 @@ private fun ActuatorTestScreenContent(
 
 @Composable
 private fun ActuatorRow(control: ActuatorControl, enabled: Boolean, onRun: (ActuatorControl, Boolean) -> Unit) {
+    val enabled = enabled && !control.alwaysDisabled
     Card(modifier = Modifier.padding(vertical = 4.dp)) {
         Row(
             modifier = Modifier
