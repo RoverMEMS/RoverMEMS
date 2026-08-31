@@ -50,7 +50,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -1160,7 +1159,7 @@ private fun DetailedDataList(data: MemsData, modifier: Modifier = Modifier) {
     LazyColumn(modifier = modifier.fillMaxWidth()) {
         items(rows) { (label, value) -> DataRow(label, value) }
         item {
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Text(stringResource(R.string.detail_fault_section_title), style = MaterialTheme.typography.titleMedium)
         }
         items(faultRows) { (icon, label, isFaulty) ->

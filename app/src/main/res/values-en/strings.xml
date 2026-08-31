@@ -27,7 +27,6 @@
     <!-- GaugeScreen: general -->
     <string name="gauge_waiting_data">Waiting for data…</string>
     <string name="gauge_mode_simple">Simple</string>
-    <string name="gauge_live_data_title">MEMS Live Data</string>
     <string name="gauge_mode_detailed">Detailed</string>
     <string name="gauge_mode_charts">Charts</string>
     <string name="gauge_mode_analog">Analog</string>
@@ -73,7 +72,6 @@
 
     <!-- MetricPickerDialog / GaugeInfoDialog -->
     <string name="dialog_select_gauge">Select gauge to display</string>
-    <string name="gauge_info_no_description">No description yet.</string>
 
     <!-- DetailedDataList row labels -->
     <string name="detail_rpm">Engine Speed</string>

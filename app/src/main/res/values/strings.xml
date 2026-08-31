@@ -27,7 +27,6 @@
     <!-- GaugeScreen: general -->
     <string name="gauge_waiting_data">データ待機中…</string>
     <string name="gauge_mode_simple">シンプル</string>
-    <string name="gauge_live_data_title">MEMS ライブデータ</string>
     <string name="gauge_mode_detailed">詳細</string>
     <string name="gauge_mode_charts">グラフ</string>
     <string name="gauge_mode_analog">アナログ</string>
@@ -73,7 +72,6 @@
 
     <!-- MetricPickerDialog / GaugeInfoDialog -->
     <string name="dialog_select_gauge">表示するメーターを選択</string>
-    <string name="gauge_info_no_description">説明はまだありません。</string>
 
     <!-- DetailedDataList row labels -->
     <string name="detail_rpm">回転数</string>
