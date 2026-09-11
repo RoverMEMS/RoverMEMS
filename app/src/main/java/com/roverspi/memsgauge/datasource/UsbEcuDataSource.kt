@@ -1,7 +1,7 @@
 package com.roverspi.memsgauge.datasource
 
 import android.content.Context
-import android.util.Log
+import com.roverspi.memsgauge.logging.DebugLog as Log
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.roverspi.memsgauge.protocol.EcuVersion
 import com.roverspi.memsgauge.protocol.MemsActuatorCommand
@@ -70,11 +70,12 @@ class UsbEcuDataSource(context: Context) : EcuDataSource {
      * than assuming this is the first call.
      */
     override suspend fun connect() {
-        val driver = pendingDriver
+        val driver = pendingDriver?.let { refreshDriver(it) }
         if (driver == null) {
             _connectionState.value = ConnectionState.ERROR
             return
         }
+        pendingDriver = driver
         pollingJob?.cancel()
         pollingJob = null
         transport?.close()
@@ -89,6 +90,23 @@ class UsbEcuDataSource(context: Context) : EcuDataSource {
         _ecuVersion.value = version
         _connectionState.value = ConnectionState.CONNECTED
         pollingJob = scope.launch { pollLoop(version) }
+    }
+
+    /**
+     * A USB brownout (e.g. the K-line adapter losing power for an instant
+     * during cranking) makes Android drop and re-enumerate the device --
+     * the old [UsbSerialDriver]'s [android.hardware.usb.UsbDevice] reference
+     * becomes stale, so re-opening a connection on it silently fails forever
+     * (this is what made "reconnect" appear to do nothing). Re-scanning and
+     * matching by vendor/product id picks up the newly re-enumerated device;
+     * falling back to whatever's plugged in covers the common case of a
+     * single adapter reappearing with different ids after re-enumeration.
+     */
+    private fun refreshDriver(driver: UsbSerialDriver): UsbSerialDriver? {
+        val attached = scanner.listAvailableDrivers()
+        return attached.firstOrNull {
+            it.device.vendorId == driver.device.vendorId && it.device.productId == driver.device.productId
+        } ?: attached.firstOrNull()
     }
 
     /** Runs the connect+handshake sequence; also used by [pollLoop] to recover a stalled link. */
@@ -179,9 +197,12 @@ class UsbEcuDataSource(context: Context) : EcuDataSource {
                 val staleMs = now - lastSuccessMs
                 if (staleMs >= FULL_RECONNECT_THRESHOLD_MS) {
                     Log.w(TAG, "pollLoop: stalled ${staleMs}ms, attempting full reconnect")
-                    val driver = pendingDriver
+                    val driver = pendingDriver?.let { refreshDriver(it) }
                     transport?.close()
-                    val newVersion = driver?.let { performHandshake(it) }
+                    val newVersion = driver?.let {
+                        pendingDriver = it
+                        performHandshake(it)
+                    }
                     if (newVersion != null) {
                         Log.d(TAG, "pollLoop: reconnect succeeded")
                         ecuVersion = newVersion

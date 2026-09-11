@@ -1,3 +1,12 @@
 <resources>
     <style name="Theme.RoverMEMS" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Shown by MainActivity.installSplashScreen() from process start until
+         the first Compose frame draws, so cold start shows the app's own icon
+         on a branded background instead of a blank white window. -->
+    <style name="Theme.RoverMEMS.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.RoverMEMS</item>
+    </style>
 </resources>

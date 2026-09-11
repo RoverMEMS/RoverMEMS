@@ -2,7 +2,7 @@ package com.roverspi.memsgauge.datasource
 
 import android.bluetooth.BluetoothDevice
 import android.content.Context
-import android.util.Log
+import com.roverspi.memsgauge.logging.DebugLog as Log
 import com.roverspi.memsgauge.ble.BleUartTransport
 import com.roverspi.memsgauge.protocol.EcuVersion
 import com.roverspi.memsgauge.protocol.MemsActuatorCommand

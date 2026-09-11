@@ -10,6 +10,7 @@
     <string name="action_share">共有</string>
     <string name="language_toggle">EN</string>
     <string name="night_mode_toggle">夜間モード切替</string>
+    <string name="analog_orientation_toggle">画面の向きを反転</string>
 
     <!-- ConnectScreen -->
     <string name="connect_title">ローバーミニ MEMS診断</string>

@@ -1,6 +1,6 @@
 package com.roverspi.memsgauge.protocol
 
-import android.util.Log
+import com.roverspi.memsgauge.logging.DebugLog as Log
 
 /**
  * Ports librosco's protocol.c command sequences onto a [ByteTransport].

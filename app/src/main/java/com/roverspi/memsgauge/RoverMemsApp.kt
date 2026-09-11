@@ -5,6 +5,7 @@ import android.content.Context
 import com.roverspi.memsgauge.datasource.BleEcuDataSource
 import com.roverspi.memsgauge.datasource.MockEcuDataSource
 import com.roverspi.memsgauge.datasource.UsbEcuDataSource
+import com.roverspi.memsgauge.logging.DebugLog
 
 /**
  * Holds the app's [com.roverspi.memsgauge.datasource.EcuDataSource]
@@ -20,5 +21,10 @@ class RoverMemsApp : Application() {
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleManager.applyLocale(base))
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        DebugLog.init(this)
     }
 }

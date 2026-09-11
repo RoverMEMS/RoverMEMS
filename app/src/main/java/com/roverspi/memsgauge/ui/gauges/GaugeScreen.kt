@@ -15,7 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material3.AlertDialog
@@ -91,6 +92,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roverspi.memsgauge.NightModeManager
+import com.roverspi.memsgauge.OrientationManager
 import com.roverspi.memsgauge.R
 import com.roverspi.memsgauge.datasource.ConnectionState
 import com.roverspi.memsgauge.datasource.EcuDataSource
@@ -103,6 +105,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val FaultRed = Color(0xFFE53935)
@@ -215,13 +218,19 @@ private fun GaugeScreenContent(
     // 戻る小さいボタン1つだけを残す。横画面専用機能なので、入っている間だけ
     // Activityの向きを横に固定し、抜けたら元に戻す。
     val isAnalogMode = mode == DisplayMode.ANALOG
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
+    // 人によってタブレットのUSB端子(下端)を右にする/左にするクセが分かれる。
+    // SENSOR_LANDSCAPEで自動追従させてみたが、マウントの傾き・走行中の振動で
+    // 意図せず反転することがあり実用上はむしろ使いづらかった(ユーザー実車
+    // フィードバック)ため、固定の手動選択+前回値の記憶に戻した([[OrientationManager]])。
+    var reversedLandscape by remember { mutableStateOf(OrientationManager.isReversed(context)) }
 
-    LaunchedEffect(isAnalogMode) {
-        activity?.requestedOrientation = if (isAnalogMode) {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    LaunchedEffect(isAnalogMode, reversedLandscape) {
+        activity?.requestedOrientation = when {
+            !isAnalogMode -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            reversedLandscape -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         }
     }
     DisposableEffect(Unit) {
@@ -273,6 +282,9 @@ private fun GaugeScreenContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 RetroClock()
+                AnalogOrientationToggleButton(
+                    onClick = { reversedLandscape = OrientationManager.toggle(context) }
+                )
                 AnalogNightModeButton()
             }
             // アナログモードは接続状態バッジを持たないので、通信が詰まって
@@ -572,12 +584,16 @@ private val TABLET_WIDTH_BREAKPOINT = 600.dp
  * popup -- this screen is meant to be glanced at while driving, not read).
  * The screen is always split evenly among however many slots fit (2x2 on a
  * tablet, 2x1 on a phone) so every gauge gets a large, equal share of the
- * screen. Each slot can show any of the 4 metrics -- drag a gauge onto
- * another slot to swap positions (like rearranging phone home screen
- * icons), or tap the small button at its bottom-right corner to pick which
- * metric that slot shows (the only way to bring in a metric that isn't
- * currently visible, e.g. swapping MAP into a phone's 2-slot layout). Both
- * the slot assignment and the swap are persisted via [GaugeLayoutPrefs].
+ * screen. Each slot's position is fixed (no drag-to-rearrange -- that was
+ * too fiddly a gesture for a screen meant to be glanced at while driving).
+ * Which metric a slot shows can only change two ways: swipe the wood
+ * background to flip the whole screen to whichever metrics currently
+ * aren't shown (like a record's A-side/B-side -- e.g. on a phone, swiping
+ * flips RPM+coolant to battery+MAP and back; the gesture is on the
+ * background rather than the dials themselves so a stray touch while
+ * glancing at a gauge can't trigger it), or tap the small button at a
+ * dial's bottom-right corner to pick a specific metric for that slot. The
+ * slot assignment and flip are both persisted via [GaugeLayoutPrefs].
  */
 @Composable
 private fun AnalogGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
@@ -720,15 +736,45 @@ private fun AnalogGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
             )
         }
 
+        // 画面の背景(木目部分)を左右にスワイプすると、画面の枠(スマホなら
+        // 2枠)を丸ごと「今表示されていない側」のメーターへ入れ替える --
+        // レコードのA面/B面のように、タコメーター+水温 ⇔ 電圧計+MAPを
+        // ひっくり返すイメージ。タブレットは4枠全部埋まっていて裏面が
+        // 存在しないため何もしない。ダイヤル自体はタップ対象にしない
+        // (運転中ちらっと見るだけの画面なので、誤タッチで切り替わるのを
+        // 防ぐため、当たり判定の小さいダイヤルより広い背景をスワイプ操作
+        // にしている)。
+        fun flipGaugeSet() {
+            val hidden = allMetrics.map { it.key }.filter { it !in slotAssignment }
+            if (hidden.size < slotAssignment.size) return
+            val newAssignment = hidden.take(slotAssignment.size)
+            slotAssignment = newAssignment
+            layoutPrefs.saveSlotAssignment(storageKey, newAssignment.map { it.name })
+        }
+
+        val swipeThresholdPx = with(density) { 56.dp.toPx() }
+        var backgroundDragTotalX by remember { mutableStateOf(0f) }
+
         Image(
             painter = painterResource(R.drawable.wood_background),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { backgroundDragTotalX = 0f },
+                        onDragEnd = {
+                            if (abs(backgroundDragTotalX) >= swipeThresholdPx) flipGaugeSet()
+                            backgroundDragTotalX = 0f
+                        },
+                        onDragCancel = { backgroundDragTotalX = 0f }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        backgroundDragTotalX += dragAmount
+                    }
+                },
             contentScale = ContentScale.Crop
         )
-
-        var draggingSlot by remember { mutableStateOf<Int?>(null) }
-        var dragCenterPx by remember { mutableStateOf(Offset.Zero) }
 
         fun assignMetric(slotIndex: Int, metricKey: GaugeMetric) {
             val newAssignment = slotAssignment.toMutableList()
@@ -741,56 +787,28 @@ private fun AnalogGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
             layoutPrefs.saveSlotAssignment(storageKey, newAssignment.map { it.name })
         }
 
+        // 各枠の位置は固定(ドラッグでの入れ替えは操作が複雑になるので廃止)。
+        // 表示するメーターを変えるのは、背景スワイプでのA面/B面一括切替か、
+        // ⋮ボタンでの個別選択のみ。targetCenterが変わる時(回転など)は
+        // アニメーションで滑らかに追従させる。
         slotAssignment.forEachIndexed { slotIndex, metricKey ->
             val metric = allMetrics.first { it.key == metricKey }
             val targetCenter = slotCenters[slotIndex]
             val animatedCenter = remember(slotIndex) { Animatable(targetCenter, Offset.VectorConverter) }
-            val isDragging = draggingSlot == slotIndex
 
-            LaunchedEffect(targetCenter, isDragging) {
-                if (!isDragging) animatedCenter.animateTo(targetCenter)
+            LaunchedEffect(targetCenter) {
+                animatedCenter.animateTo(targetCenter)
             }
-
-            val currentCenter = if (isDragging) dragCenterPx else animatedCenter.value
 
             Box(
                 modifier = Modifier
                     .offset {
                         IntOffset(
-                            (currentCenter.x - gaugeWidthPx / 2f).roundToInt(),
-                            (currentCenter.y - gaugeHeightPx / 2f).roundToInt()
+                            (animatedCenter.value.x - gaugeWidthPx / 2f).roundToInt(),
+                            (animatedCenter.value.y - gaugeHeightPx / 2f).roundToInt()
                         )
                     }
                     .width(gaugeSizeDp)
-                    .pointerInput(slotIndex) {
-                        detectDragGestures(
-                            onDragStart = {
-                                draggingSlot = slotIndex
-                                dragCenterPx = targetCenter
-                            },
-                            onDragEnd = {
-                                val nearestSlot = slotCenters.indices.minByOrNull {
-                                    (slotCenters[it] - dragCenterPx).getDistanceSquared()
-                                } ?: slotIndex
-                                if (nearestSlot != slotIndex) {
-                                    val newAssignment = slotAssignment.toMutableList()
-                                    val tmp = newAssignment[nearestSlot]
-                                    newAssignment[nearestSlot] = newAssignment[slotIndex]
-                                    newAssignment[slotIndex] = tmp
-                                    slotAssignment = newAssignment
-                                    layoutPrefs.saveSlotAssignment(storageKey, newAssignment.map { it.name })
-                                }
-                                draggingSlot = null
-                            },
-                            onDragCancel = { draggingSlot = null }
-                        ) { change, dragAmount ->
-                            change.consume()
-                            dragCenterPx = Offset(
-                                (dragCenterPx.x + dragAmount.x).coerceIn(0f, containerWidthPx),
-                                (dragCenterPx.y + dragAmount.y).coerceIn(0f, containerHeightPx)
-                            )
-                        }
-                    }
             ) {
                 Box {
                     AnalogGauge(
@@ -927,6 +945,29 @@ private fun formatClockTime(): String =
  * Placed right next to the clock since analog mode is the screen actually
  * used while driving, where the brightness toggle matters most.
  */
+/**
+ * Flips which landscape orientation the アナログ screen locks to (see the
+ * [OrientationManager]-backed `reversedLandscape` state in [GaugeScreen]).
+ * Styled to match [AnalogNightModeButton] since it lives right next to it.
+ */
+@Composable
+private fun AnalogOrientationToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .background(Color(0xFF16130F), CircleShape)
+            .border(1.5.dp, Color(0xFF9E9E9E), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.ScreenRotation,
+            contentDescription = stringResource(R.string.analog_orientation_toggle),
+            tint = Color.White
+        )
+    }
+}
+
 @Composable
 private fun AnalogNightModeButton(modifier: Modifier = Modifier) {
     val effectiveNight by NightModeManager.effectiveNight.collectAsState()

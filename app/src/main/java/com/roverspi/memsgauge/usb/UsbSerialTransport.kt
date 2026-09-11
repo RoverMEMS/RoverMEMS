@@ -1,7 +1,7 @@
 package com.roverspi.memsgauge.usb
 
 import android.hardware.usb.UsbDeviceConnection
-import android.util.Log
+import com.roverspi.memsgauge.logging.DebugLog as Log
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.roverspi.memsgauge.protocol.ByteTransport
 import kotlinx.coroutines.channels.Channel

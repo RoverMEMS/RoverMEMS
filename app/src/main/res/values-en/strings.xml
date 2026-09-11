@@ -10,6 +10,7 @@
     <string name="action_share">Share</string>
     <string name="language_toggle">JA</string>
     <string name="night_mode_toggle">Toggle night mode</string>
+    <string name="analog_orientation_toggle">Flip screen orientation</string>
 
     <!-- ConnectScreen -->
     <string name="connect_title">Rover Mini MEMS Diagnostics</string>

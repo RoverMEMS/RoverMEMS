@@ -23,6 +23,17 @@ object NightModeManager {
     private const val NIGHT_START_HOUR = 18
     private const val NIGHT_END_HOUR = 6
     const val NIGHT_BRIGHTNESS = 0.12f
+    // Day mode used to defer to the system/auto-brightness entirely
+    // (BRIGHTNESS_OVERRIDE_NONE) instead of setting an explicit value. That
+    // meant a driver could tap the sun icon (meant to brighten) and see the
+    // screen get *darker* than NIGHT_BRIGHTNESS whenever the system's own
+    // adaptive brightness happened to be low (dim room, phone testing
+    // indoors, etc.) -- from the driver's seat this looked like the
+    // sun/moon icons were wired backwards, and the brightness would also
+    // drift on its own as ambient light changed. Setting an explicit fixed
+    // value here too makes day mode always brighter than night mode and
+    // immune to auto-brightness, matching how night mode already behaves.
+    const val DAY_BRIGHTNESS = 1.0f
     private const val TICK_INTERVAL_MS = 60_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -50,6 +61,22 @@ object NightModeManager {
         val next = !_effectiveNight.value
         override = next
         _effectiveNight.value = next
+    }
+
+    /**
+     * Drops any manual override and re-evaluates from the clock. A phone's
+     * process (and this singleton with it) commonly stays alive for hours
+     * across many foreground/background switches -- without this, a single
+     * tap of the sun/moon button earlier in the day would get "stuck" and
+     * the 60s auto-recheck in [init] would never resume, so the screen
+     * would stay in whatever mode was last tapped even after crossing
+     * 18:00/6:00. Call this whenever the app comes back to the foreground
+     * so re-opening it always re-syncs to the clock, matching the
+     * class-level doc's intent.
+     */
+    fun resetOverride() {
+        override = null
+        _effectiveNight.value = isAutoNight()
     }
 
     private fun isAutoNight(hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)): Boolean =

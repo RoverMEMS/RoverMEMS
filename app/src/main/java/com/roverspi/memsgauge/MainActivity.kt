@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,7 +37,21 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(LocaleManager.applyLocale(newBase))
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-syncs to the clock every time the app comes back to the
+        // foreground (see NightModeManager.resetOverride's doc) so a sun/moon
+        // tap from earlier doesn't stay stuck for the rest of the phone's
+        // (possibly many-hours-long) process lifetime.
+        NightModeManager.resetOverride()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate() -- shows the app icon on its brand
+        // color (see Theme.RoverMEMS.Splash) from process start until the
+        // first Compose frame draws, instead of a blank white window during
+        // the several-second cold start on older/slower devices.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         // This is a live dashboard meant to be glanced at while driving, not
         // interacted with -- without this, Android's normal screen timeout
@@ -54,7 +69,7 @@ class MainActivity : ComponentActivity() {
                         screenBrightness = if (effectiveNight) {
                             NightModeManager.NIGHT_BRIGHTNESS
                         } else {
-                            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                            NightModeManager.DAY_BRIGHTNESS
                         }
                     }
                 }
