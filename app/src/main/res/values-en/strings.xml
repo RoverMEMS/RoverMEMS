@@ -137,8 +137,8 @@
     <string name="info_ignition_range">Typical: roughly 5-15° at idle</string>
     <string name="info_lambda_desc">O2 (oxygen) sensor voltage. Fine, continuous swings between 0-1000mV are normal while in closed-loop control.</string>
     <string name="info_lambda_range">Typical: swinging around an average of roughly 450mV</string>
-    <string name="info_fuel_trim_desc">How much the ECU is correcting the base fuel injection amount. 100% is the "no correction" baseline.</string>
-    <string name="info_fuel_trim_range">Typical: roughly 85-115%. Well outside that range suggests checking the fuel system or sensors.</string>
+    <string name="info_fuel_trim_desc">How much the ECU is correcting the base fuel injection amount. 0% is the "no correction" baseline — positive means adding fuel (lean), negative means removing fuel (rich).</string>
+    <string name="info_fuel_trim_range">Typical: within ±10%. Above ±25% suggests checking the fuel system or O2 sensor.</string>
 
     <!-- GaugeViewModel -->
     <string name="clear_faults_success">Fault codes cleared</string>

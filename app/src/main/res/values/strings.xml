@@ -137,8 +137,8 @@
     <string name="info_ignition_range">目安: アイドリング中は5〜15°程度</string>
     <string name="info_lambda_desc">O2(酸素)センサーの電圧です。クローズドループ制御中は0〜1000mVの間で細かく上下に振れるのが正常です。</string>
     <string name="info_lambda_range">目安: 平均でおよそ450mV付近を振れながら変動</string>
-    <string name="info_fuel_trim_desc">ECUが基本の燃料噴射量をどれだけ補正しているかです。100%が「補正なし」の基準値です。</string>
-    <string name="info_fuel_trim_range">目安: 85〜115%程度。これを大きく外れる場合は燃料系統やセンサーの点検をおすすめします。</string>
+    <string name="info_fuel_trim_desc">ECUが基本の燃料噴射量をどれだけ補正しているかです。0%が「補正なし」の基準値で、プラスは燃料を足している(薄い)、マイナスは燃料を減らしている(濃い)方向です。</string>
+    <string name="info_fuel_trim_range">目安: ±10%以内。±25%を超える場合は燃料系統やO2センサーの点検をおすすめします。</string>
 
     <!-- GaugeViewModel -->
     <string name="clear_faults_success">エラーコードをクリアしました</string>

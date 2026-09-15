@@ -501,10 +501,6 @@ private fun FaultLamp(isOn: Boolean, litColor: Color = FaultRed, size: Dp = 16.d
  */
 @Composable
 private fun SimpleGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
-    // MemsData.longTermFuelTrim is already centered on zero (raw - 128); undo
-    // that here so 100% means "no trim", matching the reference app's display.
-    val fuelTrimPercent = ((data.longTermFuelTrim + 128) / 128.0f) * 100f
-
     val gauges = listOf(
         GaugeMetric.RPM to "${data.engineRpm}",
         GaugeMetric.MAP to "${data.mapKpa}",
@@ -514,7 +510,9 @@ private fun SimpleGaugeGrid(data: MemsData, modifier: Modifier = Modifier) {
         GaugeMetric.BATTERY to "%.2f".format(data.batteryVoltage),
         GaugeMetric.IGNITION to "%.1f".format(data.ignitionAdvanceDeg),
         GaugeMetric.LAMBDA to "${data.lambdaVoltageMv}",
-        GaugeMetric.FUEL_TRIM to "%.0f".format(fuelTrimPercent)
+        // 0-centered, matching the raw MemsData field, the detailed view, the CSV log,
+        // and MemsFCR's own convention — no correction = 0%, not a 100% baseline.
+        GaugeMetric.FUEL_TRIM to "%+d".format(data.longTermFuelTrim)
     )
     var infoDialogFor by remember { mutableStateOf<GaugeMetric?>(null) }
 
