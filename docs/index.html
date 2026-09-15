@@ -137,6 +137,43 @@
   .about p:last-child{margin-bottom:0;}
   .about strong{color:var(--text);}
 
+  .glossary{padding:0;}
+  .glossary summary{
+    cursor:pointer;
+    padding:14px 18px;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--accent-strong);
+  }
+  .glossary dl{margin:0; padding:0 18px 16px; display:flex; flex-direction:column; gap:12px;}
+  .glossary dt{font-weight:700; font-size:13.5px; margin-bottom:3px;}
+  .glossary dd{margin:0; font-size:13px; line-height:1.65; color:var(--text-muted);}
+
+  .term-toggle{
+    display:inline-block;
+    margin:2px 0 4px;
+    padding:0;
+    border:none;
+    background:none;
+    font-size:12px;
+    color:var(--accent-strong);
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .term-toggle:hover{color:var(--accent);}
+  .term-body{
+    font-size:12.5px;
+    line-height:1.6;
+    color:var(--text-muted);
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 11px;
+    margin:2px 0 8px;
+  }
+
   .controls{
     padding:16px 18px;
     display:flex;
@@ -333,6 +370,11 @@
     <p><strong>これは目安を示すツールであり、実車の点検・整備士の診断に代わるものではありません。</strong>最終判断は必ずご自身の車の状態・専門家の意見と合わせて行ってください。</p>
   </section>
 
+  <details class="panel glossary" id="glossaryPanel">
+    <summary>はじめに: 出てくる用語の解説(タップで開閉)</summary>
+    <dl id="glossaryList"></dl>
+  </details>
+
   <section class="panel controls">
     <button class="btn primary" id="btnSample">サンプルログを生成して試す</button>
     <label class="btn" for="fileInput">CSVログを読み込む</label>
@@ -407,6 +449,39 @@
   var UNUSED_COLS = {ambientTemp:1, fuelTemp:1, lambdaFrequency:1, lambdaDutyCycle:1, purgeDutyCycle:1};
   var BOOL_COLS = {idleswitch:1, closedloop:1, parkNeutralSwitch:1, coolantTempSensorFault:1,
     intakeAirTempSensorFault:1, fuelPumpCircuitFault:1, throttlePotCircuitFault:1, lambdaStatus:1};
+
+  /* ---------- glossary: plain-language explanations, shown as a top-level reference list
+     and contextually inside each finding card via the "？この用語について" toggle ---------- */
+  var GLOSSARY = [
+    {keys:["longTermFuelTrim","shortTermFuelTrim"], title:"燃調トリムってなに?",
+      body:"ECUには「この回転数・この吸気圧なら、だいたいこれくらい燃料を出せばいい」という基本レシピがあります。でも実際に噴射した後、排気管のO2センサーが「濃い/薄い」を教えてくれるので、ECUはそれを見て基本レシピをこっそり微調整します。これが燃調トリムです。プラス(+)は「燃料を足している」=放っておくと薄すぎた、マイナス(-)は「燃料を減らしている」=放っておくと濃すぎた、という意味。ずっと0%近くならレシピと実際がよく合っている証拠、いつも大きくズレているなら燃料まわりか、判断材料になっているO2センサー自体を疑うサインです。"},
+    {keys:["lambdaVoltage_mV"], title:"O2(ラムダ)センサーってなに?",
+      body:"排気ガスの中の酸素の量を見て、「今の混合気は濃いか薄いか」をECUに伝えるセンサーです。健全なら、濃い→薄い→濃い…と1秒間に何度も電圧が上下に振れます(0〜1000mVくらいの間を行ったり来たり)。振れずに一つの値に張り付いていたら、センサーが壊れているか配線が切れている可能性があります。"},
+    {keys:["manifoldPressure"], title:"MAP(吸気管圧力)ってなに?",
+      body:"エンジンが空気を吸い込む通り道(吸気管)の中の圧力です。アイドリング中はピストンが強く空気を吸い込むので圧力は低め(真空に近い)、アクセルを踏んで空気がたくさん入ると圧力は上がります。この車のECUはこの圧力を直接読んで燃料の量を決めているので、アイドル中の圧力がいつもより高いと、どこかから余分な空気が入り込んでいる(空気漏れ)サインになります。"},
+    {keys:["idleBypassPos","idleBasePos"], title:"アイドルステッパー(IACバルブ)ってなに?",
+      body:"アイドリング中の回転数を保つために、スロットルを迂回する小さな空気の通り道を開け閉めしている小さなモーターです。回転数が下がりそうになったら少し開いて空気を増やし、上がりそうになったら閉じて空気を減らします。位置の数字が低いほど「閉じ気味」、高いほど「開き気味」です。"},
+    {keys:["idleError","idleSpeedDeviation"], title:"アイドル誤差ってなに?",
+      body:"ECUが「このくらいの回転数にしたい」と狙っている目標値と、実際の回転数との差です。0に近いほどアイドルが安定して目標通りに保てていることになります。大きい状態が続くと、ECUがアイドルをうまくコントロールできていないサインです。"},
+    {keys:["mainVoltage"], title:"バッテリー電圧ってなに?",
+      body:"エンジンがかかっている間は、オルタネーター(発電機)がバッテリーを充電しながら車の電装品に電気を送っています。走行中の電圧がエンジン停止時(12V前後)よりあまり上がらないままなら、発電がうまくいっていない、またはどこかで電気が逃げている(アース不良など)可能性があります。"},
+    {keys:["throttleVoltage","throttleAngle"], title:"スロットルポテンショメーターってなに?",
+      body:"アクセルペダルと連動したスロットルバルブが、今どれくらい開いているかをECUに伝えるセンサーです。可変抵抗(ボリュームつまみのようなもの)でできていて、踏み込むほど電圧が上がります。"},
+    {keys:["waterTemp"], title:"水温センサーってなに?",
+      body:"冷却水の温度をECUに伝えるセンサーです。エンジンが冷えている間は燃料を多めに、温まったら通常通りに、といった調整のもとになる大事な情報です。"},
+    {keys:["coilTime"], title:"コイル通電時間ってなに?",
+      body:"点火プラグに火花を飛ばすための電気を、コイルにどれくらいの時間ためたか(充電時間)です。長すぎると、コイルや配線に問題があるサインになることがあります。"},
+    {keys:["closedloop"], title:"クローズドループってなに?",
+      body:"O2センサーの情報を使って燃料をリアルタイムに微調整している状態のことです(「フィードバック制御中」という意味)。エンジンが温まる前など、O2センサーがまだ働けない間は「オープンループ」といって、あらかじめ決めた値で燃料を出す状態になります。"},
+    {keys:["coolantTempSensorFault","intakeAirTempSensorFault","fuelPumpCircuitFault","throttlePotCircuitFault","dtc2","dtc3","dtc4"], title:"故障コード(DTC)ってなに?",
+      body:"ECUが自分で「ここがおかしい」と検出した時に立てるフラグです。この車のECUは実は複数のバイト(データのかたまり)で故障を管理していますが、意味がはっきり分かっているのはごく一部だけで、残りは「何か検出しているが内容は不明」としか言えません。このツールでは、意味がはっきりしている項目だけ具体的に説明し、それ以外は正直に「不明」として表示しています。"},
+    {keys:[], title:"信頼度(Tier A/B/C/T)ってなに?",
+      body:"この所見がどれくらい確かな情報にもとづいているかを表しています。Tier A = 実際に動いている専門の診断ツール(MemsFCR)が使っている基準そのもの。Tier B = 解説記事や他メーカーの事例など、一般的だが車種固有ではない参考情報。Tier C = 情報源によって数字が違うなど実車での確認が必要なもの。Tier T = このツールで新しく考えた「走行中の変化」を見る実験的な仕組み。上から順に信頼度が高いと考えてください。"},
+    {keys:[], title:"「なりすまし正常値」ってなに?",
+      body:"センサーが壊れて信号が来なくなると、ECUは「動けなくなる」代わりに、あらかじめ決められた無難な数字(代替値)をこっそり使って動き続けることがあります。多くのメーカーのECUに共通する仕組みです。厄介なのは、この代替値が一見「正常範囲内」に見えてしまうこと。このツールでは、値がずっと動かずに固定されていること自体を手がかりに、こうした隠れた故障を見つけようとしています。"}
+  ];
+  var GLOSSARY_BY_KEY = {};
+  GLOSSARY.forEach(function(g,gi){ g.id="g"+gi; g.keys.forEach(function(k){ GLOSSARY_BY_KEY[k]=g; }); });
 
   /* ---------- tiny seeded PRNG so "regenerate sample" gives different but reproducible-ish runs ---------- */
   function mulberry32(a){
@@ -959,6 +1034,8 @@
     var checks = f.checks.map(function(c){return "<li>"+c+"</li>";}).join("");
     var readoutHtml = f.readout ? '<div class="readout">'+f.readout+'</div>' : "";
     var rangeHtml = f.range ? rangeBarHtml(f.range, f.severity) : "";
+    var term = f.channel ? GLOSSARY_BY_KEY[f.channel] : null;
+    var termHtml = term ? '<button type="button" class="term-toggle">？ '+term.title+'</button><div class="term-body" hidden>'+term.body+'</div>' : "";
     el.innerHTML =
       '<div class="finding-main">'+
         '<div class="finding-top"><span class="finding-title">'+f.title+'</span>'+
@@ -967,13 +1044,28 @@
         readoutHtml + rangeHtml +
         '<div class="finding-desc">'+f.desc+'</div>'+
         '<ul class="finding-checks">'+checks+'</ul>'+
+        termHtml +
       '</div>'+
       '<div class="finding-chart"><canvas></canvas><div class="cap mono">'+(f.channel?COLUMN_LABELS[f.channel]||f.channel:"")+'</div></div>';
     var canvas = el.querySelector("canvas");
     requestAnimationFrame(function(){
       drawSpark(canvas, f.series, f.flagIdx, f.threshold, sevColorVar(f.severity));
     });
+    var toggleBtn = el.querySelector(".term-toggle");
+    if (toggleBtn){
+      toggleBtn.addEventListener("click", function(){
+        var body = el.querySelector(".term-body");
+        body.hidden = !body.hidden;
+      });
+    }
     return el;
+  }
+
+  function renderGlossary(){
+    var dl = document.getElementById("glossaryList");
+    dl.innerHTML = GLOSSARY.map(function(g){
+      return "<dt>"+g.title+"</dt><dd>"+g.body+"</dd>";
+    }).join("");
   }
 
   function render(p, findings){
@@ -1061,6 +1153,7 @@
   });
 
   // initial state at rest: sample data already analyzed
+  renderGlossary();
   runSample();
 })();
 </script>
