@@ -99,7 +99,9 @@
   .mast-sub{
     color:var(--text-muted);
     font-size:14px;
-    max-width:46ch;
+    max-width:38em;
+    word-break:keep-all;
+    overflow-wrap:break-word;
   }
   .mast-badge{
     margin-left:auto;
@@ -137,15 +139,24 @@
   .about p:last-child{margin-bottom:0;}
   .about strong{color:var(--text);}
 
-  .glossary{padding:0;}
+  .glossary{padding:0; border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
   .glossary summary{
     cursor:pointer;
     padding:14px 18px;
-    font-size:13.5px;
-    font-weight:600;
+    font-size:14.5px;
+    font-weight:700;
     color:var(--accent-strong);
+    background:var(--accent-soft);
+    border-radius:9px 9px 0 0;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    gap:8px;
   }
-  .glossary dl{margin:0; padding:0 18px 16px; display:flex; flex-direction:column; gap:12px;}
+  .glossary summary::-webkit-details-marker{display:none;}
+  .glossary summary::before{content:"📖";font-size:15px;}
+  .glossary:not([open]) summary{border-radius:9px;}
+  .glossary dl{margin:0; padding:14px 18px 16px; display:flex; flex-direction:column; gap:12px;}
   .glossary dt{font-weight:700; font-size:13.5px; margin-bottom:3px;}
   .glossary dd{margin:0; font-size:13px; line-height:1.65; color:var(--text-muted);}
 
@@ -371,7 +382,7 @@
     <p id="aboutP2"><strong>これは目安を示すツールであり、実車の点検・整備士の診断に代わるものではありません。</strong>最終判断は必ずご自身の車の状態・専門家の意見と合わせて行ってください。</p>
   </section>
 
-  <details class="panel glossary" id="glossaryPanel">
+  <details class="panel glossary" id="glossaryPanel" open>
     <summary id="glossarySummary">はじめに: 出てくる用語の解説(タップで開閉)</summary>
     <dl id="glossaryList"></dl>
   </details>
@@ -514,8 +525,8 @@
   var GLOSSARY = [
     {keys:["longTermFuelTrim","shortTermFuelTrim"],
       title:{ja:"燃料トリム(長期/短期)ってなに?",en:"What is fuel trim (long/short term)?"},
-      body:{ja:"ECUには「この回転数・この吸気圧なら、だいたいこれくらい燃料を出せばいい」という基本レシピがあります。でも実際に噴射した後、排気管のO2センサーが「濃い/薄い」を教えてくれるので、ECUはそれを見て基本レシピをこっそり微調整します。これが燃料トリムです。短期は今この瞬間の素早い調整、長期はしばらく走って落ち着いた平均的な調整量です。プラス(+)は「燃料を足している」=放っておくと薄すぎた、マイナス(-)は「燃料を減らしている」=放っておくと濃すぎた、という意味。ずっと0%近くならレシピと実際がよく合っている証拠、いつも大きくズレているなら燃料まわりか、判断材料になっているO2センサー自体を疑うサインです。<br><em>注: アプリの「シンプル」表示にある燃料トリムのカードは100%を基準(100%=補正なし)にした見せ方、「詳細」表示のこの2項目は0を基準にした見せ方です。同じ燃料トリムでも基準になる数字が違うので、2つの画面の数字をそのまま比べないよう注意してください。</em>",
-        en:"The ECU has a base \"recipe\": for this RPM and this intake pressure, inject roughly this much fuel. But after actually injecting, the O2 sensor in the exhaust tells it whether the mix came out rich or lean, so the ECU quietly nudges the base recipe based on that. That nudge is fuel trim. Short-term is the fast, moment-to-moment nudge; long-term is the settled average after driving a while. Positive (+) means the ECU is adding fuel — left alone it would've been too lean. Negative (-) means it's removing fuel — left alone it would've been too rich. Staying near 0% means the recipe matches reality well; a persistent large offset points at the fuel system or a biased O2 sensor.<br><em>Note: the app's \"Simple\" view shows fuel trim on a 100%-centered scale (100% = no correction), while these two \"Detailed\" view fields are 0-centered. Same underlying value, different baseline — don't compare the two screens' numbers directly.</em>"}},
+      body:{ja:"ECUには「この回転数・この吸気圧なら、だいたいこれくらい燃料を出せばいい」という基本レシピがあります。でも実際に噴射した後、排気管のO2センサーが「濃い/薄い」を教えてくれるので、ECUはそれを見て基本レシピをこっそり微調整します。これが燃料トリムです。短期は今この瞬間の素早い調整、長期はしばらく走って落ち着いた平均的な調整量です。プラス(+)は「燃料を足している」=放っておくと薄すぎた、マイナス(-)は「燃料を減らしている」=放っておくと濃すぎた、という意味。ずっと0%近くならレシピと実際がよく合っている証拠、いつも大きくズレているなら燃料まわりか、判断材料になっているO2センサー自体を疑うサインです。アプリの「シンプル」表示・「詳細」表示どちらも、この0を基準にした見せ方で統一されています。",
+        en:"The ECU has a base \"recipe\": for this RPM and this intake pressure, inject roughly this much fuel. But after actually injecting, the O2 sensor in the exhaust tells it whether the mix came out rich or lean, so the ECU quietly nudges the base recipe based on that. That nudge is fuel trim. Short-term is the fast, moment-to-moment nudge; long-term is the settled average after driving a while. Positive (+) means the ECU is adding fuel — left alone it would've been too lean. Negative (-) means it's removing fuel — left alone it would've been too rich. Staying near 0% means the recipe matches reality well; a persistent large offset points at the fuel system or a biased O2 sensor. Both the app's \"Simple\" and \"Detailed\" views now use this same 0-centered scale."}},
     {keys:["lambdaVoltage_mV"], title:{ja:"ラムダ電圧(O2センサー電圧)ってなに?",en:"What is lambda voltage (O2 sensor voltage)?"},
       body:{ja:"排気ガスの中の酸素の量を見て、「今の混合気は濃いか薄いか」をECUに伝えるセンサーの電圧です。健全なら、濃い→薄い→濃い…と1秒間に何度も電圧が上下に振れます(0〜1000mVくらいの間を行ったり来たり)。振れずに一つの値に張り付いていたら、センサーが壊れているか配線が切れている可能性があります。",
         en:"The voltage from the sensor that watches leftover oxygen in the exhaust and tells the ECU whether the mixture is currently rich or lean. When healthy it swings rich→lean→rich several times a second (roughly 0-1000mV back and forth). If it sits flat at one value instead of swinging, the sensor may be dead or its wiring may be broken."}},
