@@ -1,0 +1,1066 @@
+<!doctype html>
+<title>MEMS Log Diagnostics</title>
+<meta name="description" content="Rover Mini SPi(MEMS 1.3)の走行ログから異常の可能性と確認ポイントを提示する無料ツール。MemsFCRの公開情報を参考にしています。">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#eef1ec;
+    --surface:#ffffff;
+    --surface-2:#e2e7de;
+    --border:#c9d0c2;
+    --text:#1b231b;
+    --text-muted:#5c6559;
+    --accent:#3b5b64;
+    --accent-strong:#223a41;
+    --accent-soft:#dbe6e5;
+    --sev-critical:#a6402c;
+    --sev-critical-soft:#f4ddd6;
+    --sev-warning:#a6741a;
+    --sev-warning-soft:#f2e6cc;
+    --sev-info:#3f7a4d;
+    --sev-info-soft:#dceade;
+    --tier-t:#5c5590;
+    --tier-t-soft:#e2e0f0;
+    --shadow: 0 1px 2px rgba(20,26,20,0.06), 0 6px 16px -8px rgba(20,26,20,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#171b16;
+      --surface:#1f251e;
+      --surface-2:#262d24;
+      --border:#3a4336;
+      --text:#e9ede5;
+      --text-muted:#a3ac9a;
+      --accent:#7fa8b0;
+      --accent-strong:#a7c7cd;
+      --accent-soft:#26383b;
+      --sev-critical:#e08069;
+      --sev-critical-soft:#3a2420;
+      --sev-warning:#dab55a;
+      --sev-warning-soft:#3a3020;
+      --sev-info:#7fc492;
+      --sev-info-soft:#20321f;
+      --tier-t:#a9a2d6;
+      --tier-t-soft:#2a2740;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -10px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171b16;
+    --surface:#1f251e;
+    --surface-2:#262d24;
+    --border:#3a4336;
+    --text:#e9ede5;
+    --text-muted:#a3ac9a;
+    --accent:#7fa8b0;
+    --accent-strong:#a7c7cd;
+    --accent-soft:#26383b;
+    --sev-critical:#e08069;
+    --sev-critical-soft:#3a2420;
+    --sev-warning:#dab55a;
+    --sev-warning-soft:#3a3020;
+    --sev-info:#7fc492;
+    --sev-info-soft:#20321f;
+    --tier-t:#a9a2d6;
+    --tier-t-soft:#2a2740;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -10px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding:0 20px 64px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;}
+
+  header.mast{
+    padding-block:28px 18px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:10px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  .mast-title{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4.2vw,40px);
+    letter-spacing:0.01em;
+    text-transform:uppercase;
+    text-wrap:balance;
+    line-height:0.95;
+    color:var(--accent-strong);
+  }
+  .mast-sub{
+    color:var(--text-muted);
+    font-size:14px;
+    max-width:46ch;
+  }
+  .mast-badge{
+    margin-left:auto;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--sev-warning);
+    background:var(--sev-warning-soft);
+    border:1px solid color-mix(in srgb, var(--sev-warning) 45%, transparent);
+    padding:4px 9px;
+    border-radius:5px;
+    white-space:nowrap;
+  }
+
+  section{margin-top:28px;}
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+  }
+
+  a{color:var(--accent-strong);}
+  a:hover{color:var(--accent);}
+
+  .about{
+    padding:14px 18px;
+    font-size:13px;
+    line-height:1.65;
+    color:var(--text-muted);
+  }
+  .about p{margin:0 0 8px;}
+  .about p:last-child{margin-bottom:0;}
+  .about strong{color:var(--text);}
+
+  .controls{
+    padding:16px 18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:center;
+  }
+  .btn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border-radius:7px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    padding:9px 14px;
+    cursor:pointer;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn:focus-visible, input:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--surface);}
+  .btn.primary:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
+  input[type="file"]{display:none;}
+  .file-name{font-size:12.5px; color:var(--text-muted); font-family:'IBM Plex Mono', monospace;}
+  .controls .hint{
+    width:100%;
+    font-size:12.5px;
+    color:var(--text-muted);
+    border-top:1px dashed var(--border);
+    padding-top:10px;
+    margin-top:2px;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(120px,1fr));
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .stat{
+    background:var(--surface);
+    padding:14px 16px;
+  }
+  .stat .n{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:26px;
+    line-height:1;
+  }
+  .stat .l{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .stat.critical .n{color:var(--sev-critical);}
+  .stat.warning .n{color:var(--sev-warning);}
+  .stat.info .n{color:var(--sev-info);}
+  .stat.trend .n{color:var(--tier-t);}
+
+  h2.section-title{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:0.02em;
+    margin:0 0 12px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  h2.section-title .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:500;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  .findings{display:flex; flex-direction:column; gap:12px;}
+  .finding{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:4px solid var(--sev-info);
+    border-radius:8px;
+    padding:14px 16px 15px;
+    box-shadow:var(--shadow);
+    display:grid;
+    grid-template-columns:1fr 150px;
+    gap:12px 20px;
+  }
+  .finding.critical{border-left-color:var(--sev-critical);}
+  .finding.warning{border-left-color:var(--sev-warning);}
+  .finding.info{border-left-color:var(--sev-info);}
+  .finding.trend{border-left-color:var(--tier-t);}
+
+  .finding-main{min-width:0;}
+  .finding-top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .finding-title{font-weight:700; font-size:14.5px;}
+  .badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.03em;
+    padding:2px 7px;
+    border-radius:4px;
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+  .badge.tier-A{color:var(--sev-critical); background:var(--sev-critical-soft); border-color:color-mix(in srgb, var(--sev-critical) 40%, transparent);}
+  .badge.tier-B{color:var(--sev-warning); background:var(--sev-warning-soft); border-color:color-mix(in srgb, var(--sev-warning) 40%, transparent);}
+  .badge.tier-C{color:var(--text-muted); background:var(--surface-2); border-color:var(--border);}
+  .badge.tier-T{color:var(--tier-t); background:var(--tier-t-soft); border-color:color-mix(in srgb, var(--tier-t) 40%, transparent);}
+  .finding-component{font-size:12px; color:var(--text-muted);}
+  .readout{font-size:13px; margin:6px 0 3px; color:var(--text-muted);}
+  .readout strong{color:var(--text); font-weight:700; font-family:'IBM Plex Mono',monospace;}
+  .rangebar{margin:3px 0 9px; max-width:320px;}
+  .rb-track{position:relative; height:8px; border-radius:4px; background:var(--surface-2); border:1px solid var(--border);}
+  .rb-normal{position:absolute; top:-1px; bottom:-1px; background:var(--sev-info); opacity:0.4; border-radius:3px;}
+  .rb-marker{position:absolute; top:-4px; width:3px; height:16px; border-radius:2px; background:var(--sev-critical);}
+  .rb-marker.ok{background:var(--sev-info);}
+  .rb-marker.warn{background:var(--sev-warning);}
+  .rb-labels{display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px; font-family:'IBM Plex Mono',monospace;}
+  .finding-desc{font-size:13.5px; line-height:1.55; margin:4px 0 8px;}
+  .finding-checks{margin:0; padding-left:18px; font-size:13px; line-height:1.6; color:var(--text);}
+  .finding-checks li{margin-bottom:2px;}
+  .finding-chart{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;}
+  .finding-chart canvas{width:150px; height:56px; display:block;}
+  .finding-chart .cap{font-size:10.5px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; text-align:center;}
+  @media (max-width:560px){
+    .finding{grid-template-columns:1fr;}
+    .finding-chart{align-items:flex-start;}
+  }
+
+  .empty-ok{
+    padding:20px 18px;
+    font-size:13.5px;
+    color:var(--sev-info);
+    background:var(--sev-info-soft);
+    border:1px solid color-mix(in srgb, var(--sev-info) 35%, transparent);
+    border-radius:8px;
+  }
+
+  details.raw{margin-top:22px;}
+  details.raw summary{
+    cursor:pointer;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--accent-strong);
+    padding:12px 4px;
+  }
+  table.chantable{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+  }
+  table.chantable th, table.chantable td{
+    text-align:left;
+    padding:6px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  table.chantable th{color:var(--text-muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em;}
+  table.chantable td.num{font-family:'IBM Plex Mono',monospace; text-align:right;}
+  table.chantable tr.unused td{color:var(--text-muted); font-style:italic;}
+  .table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface);}
+
+  footer{
+    margin-top:36px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.6;
+  }
+  footer strong{color:var(--text);}
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div>
+      <div class="mast-title">MEMS Log Diagnostics</div>
+      <div class="mast-sub">Rover Mini SPi(MEMS 1.3)の走行ログから、異常の可能性と確認ポイントを提示する無料ツール</div>
+    </div>
+    <div class="mast-badge">非公式・無料・個人プロジェクト</div>
+  </header>
+
+  <section class="panel about">
+    <p><a href="https://github.com/RoverMEMS/RoverMEMS" target="_blank" rel="noopener">RoverMEMS</a>(Rover Mini MEMS 1.3診断アプリ)の姉妹ツールです。ブラウザの中だけで動作し、読み込んだログはどこにも送信されません。判定に使っているしきい値・診断ロジックの多くは <a href="https://memsfcr.co.uk/" target="_blank" rel="noopener">MemsFCR</a>(memsfcr.co.uk / GitHub: andrewdjackson/rosco)が公開している情報を参考にしています。</p>
+    <p><strong>これは目安を示すツールであり、実車の点検・整備士の診断に代わるものではありません。</strong>最終判断は必ずご自身の車の状態・専門家の意見と合わせて行ってください。</p>
+  </section>
+
+  <section class="panel controls">
+    <button class="btn primary" id="btnSample">サンプルログを生成して試す</button>
+    <label class="btn" for="fileInput">CSVログを読み込む</label>
+    <input type="file" id="fileInput" accept=".csv,text/csv">
+    <span class="file-name" id="fileName">サンプルデータ表示中</span>
+    <div class="hint">RoverMEMSアプリの走行ログCSV(旧10列 / 新34列どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。</div>
+  </section>
+
+  <section id="statsSection">
+    <h2 class="section-title">検出結果サマリー</h2>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section>
+    <h2 class="section-title">明確な異常 <span class="count" id="cntCritical"></span></h2>
+    <div class="findings" id="findingsCritical"></div>
+  </section>
+
+  <section>
+    <h2 class="section-title">要注意 <span class="count" id="cntWarning"></span></h2>
+    <div class="findings" id="findingsWarning"></div>
+  </section>
+
+  <section>
+    <h2 class="section-title">徐々な悪化傾向(実験的・Tier T) <span class="count" id="cntTrend"></span></h2>
+    <div class="findings" id="findingsTrend"></div>
+  </section>
+
+  <section>
+    <h2 class="section-title">参考情報 <span class="count" id="cntInfo"></span></h2>
+    <div class="findings" id="findingsInfo"></div>
+  </section>
+
+  <details class="raw">
+    <summary>読み込んだ全チャンネルの生データ一覧を見る</summary>
+    <div class="table-scroll">
+      <table class="chantable" id="chanTable"></table>
+    </div>
+  </details>
+
+  <footer>
+    <strong>これは目安です。実車の点検・整備士の判断に代わるものではありません。</strong><br>
+    判定ロジックは MemsFCR(memsfcr.co.uk / GitHub: andrewdjackson/rosco)が実装・公開しているしきい値・技術記事に加え、旧世代ECU一般に共通する診断知見(Bosch Motronic系の「代替値(リンプホーム)」の仕組み、OBD-II診断で言う「妥当性(rationality)チェック」の考え方、ステッパー式アイドルバルブの位置の見方など、Mini/MEMSに限らず同世代の他メーカー車種でも共通して言われている内容)を組み合わせています。
+    Tier A = MemsFCR本体が実際に使用しているロジック、Tier B = 解説記事・他メーカーを含む一般的な整備知見、Tier C = 出典間で差があり実車確認が必要なもの、Tier T = 今回新たに考案した「1走行内の悪化傾向」検知(実験的)。<br>
+    なお、この車のECU(MEMS 1.3)はMAP式(スピードデンシティ)のため、一般によく言われる「燃調トリムが張り付く=バキュームリーク」という診断はそのまま当てはまりません。この車でバキュームリークが疑わしい時は、燃調トリムではなくアイドルステッパー位置の所見を確認してください。<br>
+    故障コード(DTC)は、実際に意味が確認できている4ビットのみ具体的な診断にし、それ以外は生の値のみ表示しています。
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 34-column detailed-log layout (Phase 1 target format) ---------- */
+  var COLUMN_LABELS = {
+    time:"経過時間", engineSpeed:"エンジン回転数(rpm)", waterTemp:"冷却水温(°C)",
+    intakeAirTemp:"吸気温(°C)", throttleVoltage:"スロットルポテンショ電圧(V)",
+    manifoldPressure:"吸気管圧力 MAP(kPa)", idleBypassPos:"アイドルステッパー位置",
+    mainVoltage:"バッテリー電圧(V)", idleswitch:"アイドルスイッチ", closedloop:"クローズドループ",
+    lambdaVoltage_mV:"O2センサー電圧(mV)", ambientTemp:"外気温(°C)※未搭載車あり",
+    fuelTemp:"燃料温度(°C)※未搭載車あり", throttleAngle:"スロットル開度(°)",
+    airFuelRatio:"空燃比", parkNeutralSwitch:"P/Nスイッチ",
+    coolantTempSensorFault:"水温センサー故障フラグ", intakeAirTempSensorFault:"吸気温センサー故障フラグ",
+    fuelPumpCircuitFault:"燃料ポンプ回路故障フラグ", throttlePotCircuitFault:"スロットルポテンショ回路故障フラグ",
+    idleSpeedDeviation:"アイドル回転偏差", idleError:"アイドル誤差(rpm)", idleBasePos:"アイドル基準位置",
+    ignitionAdvance:"点火時期進角(°)", coilTime:"コイル通電時間(ms)",
+    lambdaFrequency:"O2センサー周波数※未使用", lambdaDutyCycle:"O2センサーデューティ比※未使用",
+    lambdaStatus:"O2センサー状態", longTermFuelTrim:"長期燃調トリム(%)", shortTermFuelTrim:"短期燃調トリム(%)",
+    purgeDutyCycle:"キャニスターパージ デューティ比※未使用",
+    dtc2:"故障コード バイト2(未解読)", dtc3:"故障コード バイト3(未解読)", dtc4:"故障コード バイト4(未解読)"
+  };
+  var UNUSED_COLS = {ambientTemp:1, fuelTemp:1, lambdaFrequency:1, lambdaDutyCycle:1, purgeDutyCycle:1};
+  var BOOL_COLS = {idleswitch:1, closedloop:1, parkNeutralSwitch:1, coolantTempSensorFault:1,
+    intakeAirTempSensorFault:1, fuelPumpCircuitFault:1, throttlePotCircuitFault:1, lambdaStatus:1};
+
+  /* ---------- tiny seeded PRNG so "regenerate sample" gives different but reproducible-ish runs ---------- */
+  function mulberry32(a){
+    return function(){
+      a|=0; a=a+0x6D2B79F5|0;
+      var t=Math.imul(a^a>>>15,1|a);
+      t=t+Math.imul(t^t>>>7,61|t)^t;
+      return ((t^t>>>14)>>>0)/4294967296;
+    };
+  }
+
+  function fmtTime(sec){
+    var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60), ms=Math.round((sec-Math.floor(sec))*1000);
+    function p(n,l){ n=""+n; while(n.length<l) n="0"+n; return n; }
+    return p(h,2)+":"+p(m,2)+":"+p(s,2)+"."+p(ms,3);
+  }
+
+  /* ---------- synthetic sample log generator: start -> warm-up -> idle -> cruise ----------
+     Each call randomly rolls a DIFFERENT set of baked-in problems (including "no problems at all"),
+     so "サンプルログを生成して試す" actually produces varied results run to run, not just noise
+     jitter around the same fixed scenario. */
+  var SCENARIOS = [
+    {key:"o2stuck", label:"O2センサー電圧が固着(未接続の代替値付近)", weight:0.4},
+    {key:"trimDrift", label:"燃調トリムが走行中にじわじわ悪化", weight:0.4},
+    {key:"throttleFlicker", label:"スロットルポテンショ回路故障が一瞬だけ発生", weight:0.3},
+    {key:"unknownDtc", label:"未解読の故障コードバイトが立つ", weight:0.3},
+    {key:"batteryLow", label:"走行中にバッテリー電圧が13V未満まで低下", weight:0.3},
+    {key:"vacuumLeak", label:"アイドル時のMAP上昇+ステッパー位置低下(バキュームリーク)", weight:0.3},
+    {key:"coolantFault", label:"水温が59〜60°C固定(センサー断線)", weight:0.25},
+    {key:"overheat", label:"水温が100°Cを超えて上昇(オーバーヒート)", weight:0.2}
+  ];
+  function rollScenarios(rnd){
+    var picked = {};
+    var any = false;
+    SCENARIOS.forEach(function(s){ if (rnd() < s.weight){ picked[s.key]=true; any=true; } });
+    // keep roughly a third of runs completely clean, to demonstrate the "no issues" state too
+    if (any && rnd() < 0.25){ picked = {}; any = false; }
+    return picked;
+  }
+
+  function generateSampleCsv(){
+    var rnd = mulberry32(Date.now() ^ (Math.random()*1e9|0) ^ (Math.random()*1e9|0));
+    var noise = function(amp){ return (rnd()-0.5)*2*amp; };
+    var sc = rollScenarios(rnd);
+    var N = 260; // 260 seconds @ 1Hz
+    var rows = [];
+    var header = ["time","engineSpeed","waterTemp","intakeAirTemp","throttleVoltage","manifoldPressure",
+      "idleBypassPos","mainVoltage","idleswitch","closedloop","lambdaVoltage_mV","ambientTemp","fuelTemp",
+      "throttleAngle","airFuelRatio","parkNeutralSwitch","coolantTempSensorFault","intakeAirTempSensorFault",
+      "fuelPumpCircuitFault","throttlePotCircuitFault","idleSpeedDeviation","idleError","idleBasePos",
+      "ignitionAdvance","coilTime","lambdaFrequency","lambdaDutyCycle","lambdaStatus","longTermFuelTrim",
+      "shortTermFuelTrim","purgeDutyCycle","dtc2","dtc3","dtc4"];
+
+    var glitchStart = 148 + Math.floor(rnd()*6);
+    var trimPeak = 16 + rnd()*10; // vary how bad the drift gets, run to run
+
+    for (var t=0; t<N; t++){
+      var rpm, water;
+      if (t < 5){ rpm = Math.round(200 + t*140 + noise(30)); water = 15+noise(0.5); }
+      else if (t < 90){
+        rpm = Math.round(880 + noise(40));
+        water = 15 + (t-5)*(70/85) + noise(0.4);
+      } else if (t < 150){
+        rpm = Math.round(860 + noise(25));
+        water = 88 + noise(0.6);
+      } else {
+        var cyc = Math.sin((t-150)/14) * 900;
+        rpm = Math.round(2400 + cyc + noise(70));
+        water = 89 + noise(0.8);
+      }
+      var idle = t>=90 && rpm < 1300 && t<150;
+      var iat = Math.min(27, 17 + t*0.03) + noise(0.3);
+      var map_ = idle ? (30 + noise(3)) : (t<5 ? 95 : (38 + Math.max(0,Math.sin((t-150)/14))*20 + noise(3)));
+      var iac = idle ? Math.round(28 + noise(3)) : Math.round(15 + noise(4));
+      var batt = t<5 ? (10.5+noise(0.3)) : (14.1 + noise(0.15));
+      var tvolt = idle ? (0.45+noise(0.05)) : (1.6 + Math.max(0,Math.sin((t-150)/14))*1.6 + noise(0.1));
+      var tAngle = idle ? (2+noise(0.5)) : (14 + Math.max(0,Math.sin((t-150)/14))*22 + noise(1));
+      var idleSw = idle ? "true":"false";
+      var closedLoop = t>=60 ? "true":"false";
+      var lambda = sc.o2stuck ? Math.round(435+noise(3)) : Math.round(450 + Math.sin(t*1.3)*430 + noise(20));
+      var afr = 14.2 + noise(0.3);
+      var idleErr = idle ? Math.round(15+noise(12)) : Math.round(noise(15));
+      var ltft = sc.trimDrift ? (t<150 ? (2+noise(1.5)) : (3 + (t-150)/110*trimPeak + noise(1.5))) : (noise(3));
+      var stft = noise(3);
+      var ignAdv = idle ? (9+noise(2)) : (18+Math.max(0,Math.sin((t-150)/14))*6+noise(2));
+      var coilT = 2.3 + noise(0.15);
+      var throttleFault = (sc.throttleFlicker && t>=glitchStart && t<glitchStart+5) ? "true":"false";
+      var dtc3 = sc.unknownDtc ? "0x02" : "0x00";
+      var coolantFault = "false";
+
+      if (sc.batteryLow && t>=170 && t<210){ batt = 12.3 + noise(0.25); }
+      if (sc.vacuumLeak && idle){ map_ = 50 + noise(3); iac = Math.round(5 + noise(2)); }
+      if (sc.coolantFault){ water = 59.5 + noise(0.4); coolantFault = t>=90 ? "true":"false"; }
+      if (sc.overheat && t>=180){ water = Math.min(112, 89 + (t-180)*0.35) + noise(0.5); }
+
+      rows.push([
+        fmtTime(t), rpm, water.toFixed(1), iat.toFixed(1), tvolt.toFixed(2), map_.toFixed(1),
+        iac, batt.toFixed(2), idleSw, closedLoop, lambda, 255, 255,
+        tAngle.toFixed(1), afr.toFixed(2), "false", coolantFault, "false",
+        "false", throttleFault, idleErr, idleErr, idle?Math.round(30+noise(4)):Math.round(60+noise(6)),
+        ignAdv.toFixed(1), coilT.toFixed(2), 255, 255, closedLoop,
+        ltft.toFixed(1), stft.toFixed(1), 0, "0x00", dtc3, "0x00"
+      ].join(","));
+    }
+    var scenarioNames = SCENARIOS.filter(function(s){return sc[s.key];}).map(function(s){return s.label;});
+    return {csv:"#"+header.join(",")+"\n"+rows.join("\n")+"\n", scenarioNames:scenarioNames};
+  }
+
+  /* ---------- CSV parsing: header-name lookup, mirrors LogFileParser.kt so logic ports cleanly to Kotlin ---------- */
+  function parseCsv(text){
+    var lines = text.split(/\r?\n/).filter(function(l){return l.length>0;});
+    if (!lines.length) return null;
+    var header = lines[0].replace(/^#/,"").split(",").map(function(s){return s.trim();});
+    var cols = {};
+    header.forEach(function(h){ cols[h]=[]; });
+    for (var i=1;i<lines.length;i++){
+      var parts = lines[i].split(",");
+      header.forEach(function(h,idx){ cols[h].push(idx<parts.length?parts[idx].trim():""); });
+    }
+    return {header:header, cols:cols, n: lines.length-1};
+  }
+
+  function numCol(p,name){
+    if (!p.cols[name]) return null;
+    return p.cols[name].map(function(v){ var f=parseFloat(v); return isNaN(f)?null:f; });
+  }
+  function boolCol(p,name){
+    if (!p.cols[name]) return null;
+    return p.cols[name].map(function(v){ return v==="true"||v==="1"||v==="True"; });
+  }
+  function timeSecCol(p){
+    if (!p.cols.time) return null;
+    return p.cols.time.map(function(v){
+      var m = /^(\d+):(\d+):(\d+)(?:\.(\d+))?$/.exec(v);
+      if (!m) return null;
+      return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (m[4]?(+("0."+m[4])):0);
+    });
+  }
+
+  function mean(arr){ var v=arr.filter(function(x){return x!=null && !isNaN(x);}); if(!v.length) return null; return v.reduce(function(a,b){return a+b;},0)/v.length; }
+  function stddev(arr){ var v=arr.filter(function(x){return x!=null && !isNaN(x);}); if(v.length<2) return null; var m=mean(v); return Math.sqrt(v.reduce(function(a,b){return a+(b-m)*(b-m);},0)/v.length); }
+  function thirds(arr){ var v=arr.map(function(x,i){return [i,x];}).filter(function(p){return p[1]!=null;}); var k=Math.max(1,Math.floor(v.length/3)); return { first:v.slice(0,k).map(function(p){return p[1];}), last:v.slice(v.length-k).map(function(p){return p[1];}) }; }
+  function maskIndices(mask){ var r=[]; mask.forEach(function(b,i){ if(b) r.push(i); }); return r; }
+
+  /* ---------- rule engine ---------- */
+  function analyze(p){
+    var findings = [];
+    var t = timeSecCol(p) || p.cols.time.map(function(_,i){return i;});
+    var rpm = numCol(p,"engineSpeed");
+    var water = numCol(p,"waterTemp");
+    var iat = numCol(p,"intakeAirTemp");
+    var tvolt = numCol(p,"throttleVoltage");
+    var map_ = numCol(p,"manifoldPressure");
+    var iac = numCol(p,"idleBypassPos");
+    var batt = numCol(p,"mainVoltage");
+    var lambda = numCol(p,"lambdaVoltage_mV");
+    var closedLoop = boolCol(p,"closedloop");
+    var idleErr = numCol(p,"idleError");
+    var ltft = numCol(p,"longTermFuelTrim");
+    var coilT = numCol(p,"coilTime");
+
+    var running = rpm ? rpm.map(function(v){return v!=null && v>300;}) : null;
+    var idle = rpm && tvolt ? rpm.map(function(v,i){return v!=null && v>500 && v<1400 && tvolt[i]!=null && tvolt[i]<1.0;}) : null;
+    var warm = water ? water.map(function(v){return v!=null && v>=80;}) : null;
+
+    function add(f){ findings.push(f); }
+
+    /* --- Tier A: confirmed fault-flag bits --- */
+    var faultDefs = [
+      ["coolantTempSensorFault","水温センサー回路の故障をECUが検出", "水温センサー本体・コネクタ・配線"],
+      ["intakeAirTempSensorFault","吸気温センサー回路の故障をECUが検出", "吸気温センサー本体・コネクタ・配線"],
+      ["fuelPumpCircuitFault","燃料ポンプ駆動回路の故障をECUが検出", "燃料ポンプ・リレー・配線"],
+      ["throttlePotCircuitFault","スロットルポテンショ回路の故障をECUが検出", "スロットルボディのポテンショメーター・コネクタ・配線"]
+    ];
+    faultDefs.forEach(function(d){
+      var col = boolCol(p,d[0]);
+      if (!col) return;
+      var idxs = maskIndices(col);
+      if (idxs.length){
+        add({tier:"A", severity:"critical", channel:d[0],
+          title:d[1], component:d[2],
+          desc:"ECUの故障コードで"+idxs.length+"件、直接この異常が報告されています(最初: "+ (p.cols.time[idxs[0]]) +")。",
+          checks:["配線・コネクタの接触/腐食を確認する","可能なら別の個体のセンサーと交換して切り分ける","走行中も再現するか、症状が出るタイミングを記録する"],
+          series: col.map(function(b){return b?1:0;}), flagIdx: idxs, times:t});
+      }
+    });
+    // unknown raw dtc bytes
+    ["dtc2","dtc3","dtc4"].forEach(function(name){
+      if (!p.cols[name]) return;
+      var vals = p.cols[name];
+      var nonzero = vals.filter(function(v){ return v && v!=="0x00" && v!=="0" && v!==""; });
+      if (nonzero.length){
+        add({tier:"C", severity:"info", channel:name,
+          title:"ECUが分類外の異常コードを検出("+name+" = "+nonzero[0]+")",
+          component:"内容不明(このアプリでは解読できないバイト)",
+          desc:"このバイトの意味は公開情報からは確認できていません。誤診断を避けるため内容の推測はしていません。専用の診断機(MemsFCR等)での確認、または値を記録して経過を見ることをおすすめします。",
+          checks:["他の所見と合わせて総合的に判断する","再現するか、次回以降のログでも同じ値が出るか記録しておく"],
+          series:null, flagIdx:[], times:t});
+      }
+    });
+
+    /* --- Tier A: battery voltage while running --- */
+    if (batt && running){
+      var lowIdx = maskIndices(batt.map(function(v,i){ return running[i] && v!=null && v<13; }));
+      if (lowIdx.length){
+        var worst = Math.min.apply(null, lowIdx.map(function(i){return batt[i];}));
+        add({tier:"A", severity:"critical", channel:"mainVoltage",
+          title:"バッテリー電圧が走行中に13V未満まで低下",
+          component:"バッテリー・オルタネーター(発電)・アース線",
+          readout:"目安: 13V以上 ・ 実測(最低値): <strong>"+worst.toFixed(2)+"V</strong>",
+          range:{min:10,max:15,normalMin:13,normalMax:15,value:worst,unit:"V"},
+          desc:"走行中に電圧が13V未満になった区間が"+lowIdx.length+"件あります(最低 "+worst.toFixed(2)+"V)。オルタネーターより先に、Miniはアース線の状態が原因になっていることが多いです。",
+          checks:["エンジンルーム〜車体のアース線の接続・錆を確認する","オルタネーター直近で電圧を測り、バッテリー端子との差を見る","バッテリー自体の健全性(比重・容量)を確認する"],
+          series: batt, flagIdx: lowIdx, times:t, threshold:13});
+      }
+    }
+
+    /* --- Tier A/B: MAP at idle (vacuum leak) --- */
+    if (map_ && idle){
+      var idleIdx = maskIndices(idle);
+      var idleMap = idleIdx.map(function(i){return map_[i];});
+      var mm = mean(idleMap);
+      if (mm!=null){
+        if (mm>45){
+          add({tier:"A", severity:"critical", channel:"manifoldPressure", title:"アイドル時のMAP(吸気管圧力)が高すぎる",
+            component:"吸気系のバキューム(負圧)漏れ・インテークマニホールド",
+            readout:"目安: 45kPa以下 ・ 実測(アイドル平均): <strong>"+mm.toFixed(1)+"kPa</strong>",
+            range:{min:15,max:65,normalMin:15,normalMax:45,value:mm,unit:"kPa"},
+            desc:"アイドル中のMAP平均が"+mm.toFixed(1)+"kPaです。45kPaを超えており、大きめのバキュームリークが疑われます。",
+            checks:["インテークマニホールドの継ぎ目・バキュームホースの亀裂を確認する","フューエルトラップ(ブローバイ関連ホース)を指で塞いで変化を見る","ホース類がフィッティングに奥まで刺さりすぎて内径を塞いでいないか確認する"],
+            series: map_, flagIdx: idleIdx.filter(function(i){return map_[i]>45;}), times:t, threshold:45});
+        } else if (mm>41){
+          add({tier:"B", severity:"warning", channel:"manifoldPressure", title:"アイドル時のMAPがやや高め(軽微なバキュームリークの可能性)",
+            component:"吸気系のバキューム(負圧)漏れ",
+            readout:"目安: 41kPa以下(正常の目安25-40kPa) ・ 実測(アイドル平均): <strong>"+mm.toFixed(1)+"kPa</strong>",
+            range:{min:15,max:65,normalMin:15,normalMax:41,value:mm,unit:"kPa"},
+            desc:"アイドル中のMAP平均が"+mm.toFixed(1)+"kPa(目安25-40kPaに対してやや高い)。軽微な漏れの可能性があります。",
+            checks:["バキュームホースの亀裂・緩みを目視で確認する","エンジン回転数を上げた時に症状が軽くなるか確認する(軽微な漏れは高回転ほど影響が小さい)"],
+            series: map_, flagIdx: idleIdx, times:t, threshold:41});
+        }
+      }
+    }
+
+    /* --- Tier A: coil charge time --- */
+    if (coilT && running && batt){
+      var coilIdx = maskIndices(coilT.map(function(v,i){ return running[i] && v!=null && v>4 && batt[i]!=null && batt[i]>=13; }));
+      if (coilIdx.length){
+        var worstCoil = Math.max.apply(null, coilIdx.map(function(i){return coilT[i];}));
+        add({tier:"A", severity:"warning", channel:"coilTime", title:"イグニッションコイルの通電時間が長い",
+          component:"イグニッションコイル・点火回路",
+          readout:"目安: 4ms以下 ・ 実測(最大): <strong>"+worstCoil.toFixed(2)+"ms</strong>",
+          range:{min:0,max:6,normalMin:0,normalMax:4,value:worstCoil,unit:"ms"},
+          desc:"バッテリー電圧が十分な状態でもコイル通電時間が4msを超える区間が"+coilIdx.length+"件あります。",
+          checks:["コイルの配線・コネクタを確認する","コイル自体の抵抗値を測定する"],
+          series: coilT, flagIdx: coilIdx, times:t, threshold:4});
+      }
+    }
+
+    /* --- Tier A: idle error --- */
+    if (idleErr && idle){
+      var ie_idx = maskIndices(idleErr.map(function(v,i){ return idle[i] && v!=null && Math.abs(v)>100; }));
+      if (ie_idx.length){
+        var worstIe = Math.max.apply(null, ie_idx.map(function(i){return Math.abs(idleErr[i]);}));
+        add({tier:"A", severity:"critical", channel:"idleError", title:"アイドル回転数の誤差が大きい(ECUがアイドル制御を失っている可能性)",
+          component:"アイドルステッパー(ISCV)・バキュームリーク・スロットルワイヤー調整",
+          readout:"目安: ±100rpm以内 ・ 実測(最大の誤差): <strong>"+worstIe.toFixed(0)+"rpm</strong>",
+          range:{min:0,max:200,normalMin:0,normalMax:100,value:worstIe,unit:"rpm"},
+          desc:"アイドル中のアイドル誤差が100rpmを超える区間が"+ie_idx.length+"件あります。",
+          checks:["スロットルワイヤーの遊び(ロストモーションギャップ)を確認する","バキュームホース類の漏れを確認する","改善しなければステッパーモーター自体を疑う"],
+          series: idleErr, flagIdx: ie_idx, times:t, threshold:100});
+      }
+    }
+
+    /* --- Tier A/B: fuel trim absolute level ---
+       注意: MEMSはMAP式(スピードデンシティ)なので、一般的な「燃調トリムが張り付く=バキュームリーク」という
+       定説はそのまま当てはまらない(MAP式はバキュームリークの影響をほぼ受けない、というのが一般的な知見)。
+       この車でバキュームリークを疑うべきサインは、燃調トリムではなく後述のアイドルステッパー位置(低い側)。
+       そのためここでは原因候補からバキュームリークを外し、燃圧・インジェクター・O2センサーのバイアスに絞る。 */
+    if (ltft){
+      var hi = maskIndices(ltft.map(function(v){ return v!=null && Math.abs(v)>25; }));
+      var mid = maskIndices(ltft.map(function(v){ return v!=null && Math.abs(v)>10 && Math.abs(v)<=25; }));
+      if (hi.length){
+        var worstTrimIdx = hi.reduce(function(a,b){ return Math.abs(ltft[b])>Math.abs(ltft[a])?b:a; }, hi[0]);
+        var worstTrim = ltft[worstTrimIdx];
+        add({tier:"A", severity:"critical", channel:"longTermFuelTrim", title:"燃調トリムが±25%を超えている(明確な燃調異常)",
+          component:"燃料系統(燃圧・インジェクター)・O2センサーのバイアス",
+          readout:"目安: ±25%以内 ・ 実測(最大): <strong>"+(worstTrim>0?"+":"")+worstTrim.toFixed(1)+"%</strong>",
+          range:{min:-40,max:40,normalMin:-25,normalMax:25,value:worstTrim,unit:"%"},
+          desc:"長期燃調トリムの絶対値が25%を超える区間が"+hi.length+"件あります。プラス側ならリーン(薄い)、マイナス側ならリッチ(濃い)方向です。この車のECUはMAP式(スピードデンシティ)のため、一般的な車で言われる「トリムが張り付く=バキュームリーク」は基本的に当てはまりません(MAP式は吸気圧そのものを見て燃料を計算するため、少々の空気漏れでは狂いにくいとされています)。バキュームリークが疑わしい場合は、下のアイドルステッパー位置の所見を確認してください。",
+          checks:["アイドル・2500rpm・3500rpm程度でそれぞれ30秒以上値を観察し、回転数によって傾向が変わるか確認する(全域で高いなら燃圧/インジェクター/センサーの方を疑う)","燃圧・インジェクターの詰まりや漏れを確認する","O2センサーの出力自体に偏りがないか確認する"],
+          series: ltft, flagIdx: hi, times:t, threshold:25});
+      } else if (mid.length){
+        var worstTrimIdx2 = mid.reduce(function(a,b){ return Math.abs(ltft[b])>Math.abs(ltft[a])?b:a; }, mid[0]);
+        var worstTrim2 = ltft[worstTrimIdx2];
+        add({tier:"B", severity:"warning", channel:"longTermFuelTrim", title:"燃調トリムがやや外れ気味",
+          component:"燃料系統・O2センサー",
+          readout:"目安: ±10%以内 ・ 実測(最大): <strong>"+(worstTrim2>0?"+":"")+worstTrim2.toFixed(1)+"%</strong>",
+          range:{min:-40,max:40,normalMin:-10,normalMax:10,value:worstTrim2,unit:"%"},
+          desc:"長期燃調トリムの絶対値が10%を超える区間が"+mid.length+"件あります。まだ明確な異常ではありませんが注意が必要です。",
+          checks:["経過を見て悪化していないか継続的にログを取る"],
+          series: ltft, flagIdx: mid, times:t, threshold:10});
+      }
+    }
+
+    /* --- Tier A/B: idle stepper position when warm+idle — direction-aware ---
+       一般に(メーカー問わず)ステッパー位置が低すぎる=どこかから余分な空気が入っている(バキュームリーク)、
+       高すぎる=通路が狭くなっている(カーボン詰まり等)・負荷が高い、という方向で解釈するのが定石。
+       具体的な数値(10-50)はMemsFCRの目安をそのまま使うが、方向ごとに原因候補を分ける。 */
+    if (iac && warm && idle){
+      var idleIdx0 = maskIndices(iac.map(function(v,i){ return warm[i] && idle[i] && v!=null; }));
+      var lowIdx0 = idleIdx0.filter(function(i){ return iac[i]<10; });
+      var highIdx0 = idleIdx0.filter(function(i){ return iac[i]>50; });
+      if (lowIdx0.length){
+        var lowIacMean = mean(lowIdx0.map(function(i){return iac[i];}));
+        add({tier:"B", severity:"warning", channel:"idleBypassPos", title:"暖機後のアイドルステッパー位置が低すぎる(バキュームリークの疑い)",
+          component:"吸気系のバキューム(負圧)漏れ・スロットルワイヤー調整",
+          readout:"目安: 10ステップ以上 ・ 実測平均: <strong>"+lowIacMean.toFixed(0)+"ステップ</strong>",
+          range:{min:0,max:70,normalMin:10,normalMax:70,value:lowIacMean,unit:""},
+          desc:lowIdx0.length+"件、暖機後アイドル時のステッパー位置が目安(10-50)より低くなっています。どこかから余分な空気が入り込み、ECUがバルブを閉じ気味にして帳尻を合わせている可能性があります。",
+          checks:["インテークマニホールドの継ぎ目・バキュームホースの亀裂を確認する","スロットルワイヤーが引っ張られすぎていないか確認する"],
+          series: iac, flagIdx: lowIdx0, times:t, threshold:10});
+      }
+      if (highIdx0.length){
+        var highIacMean = mean(highIdx0.map(function(i){return iac[i];}));
+        add({tier:"B", severity:"warning", channel:"idleBypassPos", title:"暖機後のアイドルステッパー位置が高すぎる(通路の詰まり・負荷過多の疑い)",
+          component:"アイドルステッパー通路のカーボン詰まり・スロットルボディ・補機負荷",
+          readout:"目安: 50ステップ以下 ・ 実測平均: <strong>"+highIacMean.toFixed(0)+"ステップ</strong>",
+          range:{min:0,max:70,normalMin:0,normalMax:50,value:highIacMean,unit:""},
+          desc:highIdx0.length+"件、暖機後アイドル時のステッパー位置が目安(10-50)より高くなっています。通路が狭くなっている、またはエアコン等の補機負荷が高い可能性があります。",
+          checks:["ステッパー通路・スロットルボディのカーボン汚れを清掃する","エアコン等の補機を切った状態でも改善しないか確認する"],
+          series: iac, flagIdx: highIdx0, times:t, threshold:50});
+      }
+    }
+
+    /* --- Tier B: idle hunting but stepper position frozen → suspect ignition/fueling, not the valve itself --- */
+    if (idleErr && iac && idle){
+      var idleIdx2 = maskIndices(idle);
+      var ieVals = idleIdx2.map(function(i){return idleErr[i];}).filter(function(v){return v!=null;});
+      var iacVals2 = idleIdx2.map(function(i){return iac[i];}).filter(function(v){return v!=null;});
+      if (ieVals.length>=10 && iacVals2.length>=10){
+        var errAbsMean = mean(ieVals.map(Math.abs));
+        var iacSd2 = stddev(iacVals2);
+        if (errAbsMean!=null && errAbsMean>40 && iacSd2!=null && iacSd2<2){
+          add({tier:"B", severity:"warning", channel:"idleBypassPos",
+            title:"アイドルが不安定なのにステッパー位置はほとんど動いていない(バルブ以外が原因の可能性)",
+            component:"点火時期・燃調(ステッパーバルブ自体の可能性は低い)",
+            desc:"アイドル中の回転のブレが大きい(誤差の平均絶対値"+errAbsMean.toFixed(0)+"rpm)一方で、ステッパー位置はほぼ一定(ばらつき±"+iacSd2.toFixed(1)+")です。バルブが反応して調整しているのに追いつけていない訳ではなく、そもそも動いていないので、原因はバルブ自体よりも点火時期や燃調にある可能性が高いです。",
+            checks:["点火系統(プラグ・コード・点火時期)を先に確認する","燃調(燃圧・インジェクター)を確認する","ステッパーバルブ自体の優先度は下げてよい"],
+            series: iac, flagIdx: [], times:t, threshold:null});
+        }
+      }
+    }
+
+    /* --- Tier B: coolant overheating --- */
+    if (water && running){
+      var hotIdx = maskIndices(water.map(function(v,i){ return running[i] && v!=null && v>100; }));
+      if (hotIdx.length){
+        var worstWater = Math.max.apply(null, hotIdx.map(function(i){return water[i];}));
+        add({tier:"B", severity:"critical", channel:"waterTemp", title:"冷却水温が100°Cを超えている(オーバーヒートの可能性)",
+          component:"冷却系統(ラジエーター・ファン・冷却水量・サーモスタット)",
+          readout:"目安: 100°C以下(正常目安80-100°C) ・ 実測(最大): <strong>"+worstWater.toFixed(1)+"°C</strong>",
+          range:{min:50,max:120,normalMin:50,normalMax:100,value:worstWater,unit:"°C"},
+          desc:hotIdx.length+"件、水温が100°Cを超えています。",
+          checks:["冷却水量・漏れを確認する","ファンが正常に作動しているか確認する","サーモスタットの固着を確認する"],
+          series: water, flagIdx: hotIdx, times:t, threshold:100});
+      }
+    }
+
+    /* --- spoofed "limp-home" default values --- */
+    if (water){
+      var wm = mean(water), ws = stddev(water);
+      if (wm!=null && wm>=58 && wm<=61 && ws!=null && ws<1.5 && water.length>=5){
+        add({tier:"B", severity:"critical", channel:"waterTemp", title:"水温が59〜60°C付近で一切動いていない(センサー断線の疑い)",
+          component:"水温センサー(断線時のECU代替値と一致)",
+          desc:"ログ全体で水温がほぼ固定値("+wm.toFixed(1)+"°C、ばらつき±"+ws.toFixed(2)+")のままです。これはセンサー断線時にECUが返す代替値の範囲と一致します。一見「正常範囲内」に見えるため見逃しやすいパターンです。",
+          checks:["水温センサーのコネクタ・配線の断線を確認する","センサー単体の抵抗値を測る(目安: 20°Cで概ね2.4-2.6kΩ、80°Cで概ね300Ω)"],
+          series: water, flagIdx: maskIndices(water.map(function(){return true;})), times:t, threshold:null});
+      }
+    }
+    if (iat){
+      var im = mean(iat), is_ = stddev(iat);
+      if (im!=null && im>=34 && im<=36 && is_!=null && is_<1.5 && iat.length>=5){
+        add({tier:"B", severity:"critical", channel:"intakeAirTemp", title:"吸気温が35°C付近で一切動いていない(センサー故障の疑い)",
+          component:"吸気温センサー(断線/未接続時のECU代替値と一致)",
+          desc:"ログ全体で吸気温がほぼ固定値("+im.toFixed(1)+"°C)のままです。センサー未接続/故障時の代替値と一致します。",
+          checks:["吸気温センサーのコネクタ・配線を確認する"],
+          series: iat, flagIdx: maskIndices(iat.map(function(){return true;})), times:t, threshold:null});
+      }
+    }
+
+    /* --- lambda: stuck (not oscillating) and spoofed-disconnect value --- */
+    if (lambda && t){
+      var t0 = t[0]!=null?t[0]:0;
+      var afterWarmupIdx = maskIndices(t.map(function(v){ return v!=null && (v-t0)>=90; }));
+      if (afterWarmupIdx.length>5){
+        var lwin = afterWarmupIdx.map(function(i){return lambda[i];});
+        var lsd = stddev(lwin), lm = mean(lwin);
+        if (lsd!=null && lsd<100){
+          var isSpoof = lm!=null && lm>=420 && lm<=450;
+          add({tier:"A", severity:"critical", channel:"lambdaVoltage_mV",
+            title: isSpoof ? "O2センサー電圧が435mV付近に固定(未接続/センサー故障の疑い)" : "O2センサー電圧が振動していない(固着の疑い)",
+            component:"O2(ラムダ)センサー・ヒーターリレー・配線",
+            desc:"始動90秒後以降、O2電圧の振れ幅(標準偏差)が"+lsd.toFixed(1)+"mVとほぼ一定です(健全なら0-1000mV付近を1秒に1回以上のペースで往復します)。平均値は"+ (lm?lm.toFixed(0):"?") +"mV。"+(isSpoof?"未接続時の代替値(435mV付近)と一致します。":""),
+            checks:["燃料の供給側ホースを一時的につまみ、電圧が下がるか確認する(下がれば配管側、下がらなければセンサー側)","燃料のリターン側ホースを一時的につまみ、電圧が上がるか確認する","センサーコネクタの接続・ヒーターリレーを確認する"],
+            series: lambda, flagIdx: afterWarmupIdx, times:t, threshold:null});
+        }
+      }
+    }
+
+    /* --- Tier B: generic "rationality" check — a channel that never varies is itself suspicious,
+       regardless of whether the value looks in-range. This is a general OBD-II diagnostic concept
+       ("comprehensive component monitor" rationality/in-range-failure check), and the same idea
+       used above for water temp / intake air temp / lambda, generalized to channels that don't have
+       a specific known "spoofed default" value to match against. --- */
+    function checkFlatline(name, sdThreshold, unit, component, checks){
+      var col = numCol(p,name);
+      if (!col) return;
+      var idxs = running ? maskIndices(running) : col.map(function(_,i){return i;});
+      var vals = idxs.map(function(i){return col[i];}).filter(function(v){return v!=null;});
+      if (vals.length < 20) return;
+      var sd = stddev(vals);
+      if (sd!=null && sd < sdThreshold){
+        add({tier:"B", severity:"warning", channel:name,
+          title:(COLUMN_LABELS[name]||name)+"の値がほとんど変化していない(固着・断線の可能性)",
+          component:component,
+          desc:"走行中"+vals.length+"件を通じてこの項目がほぼ一定です(ばらつき±"+sd.toFixed(2)+unit+")。本来スロットル操作やエンジン負荷で変動するはずの項目なので、数値そのものが正常範囲内でも「動かない」こと自体が異常のサインになり得ます(範囲チェックとは別の「妥当性チェック」の考え方)。",
+          checks:checks, series:col, flagIdx:[], times:t, threshold:null});
+      }
+    }
+    checkFlatline("throttleVoltage",0.15,"V","スロットルポテンショメーター・コネクタ・配線",
+      ["アクセルを踏んだ状態でテスターの値が変化するか確認する","コネクタ・配線の接触を確認する"]);
+    checkFlatline("manifoldPressure",2,"kPa","MAPセンサー・配線・負圧ホース",
+      ["負圧ホースの外れ・詰まりを確認する","センサーコネクタの接続を確認する"]);
+    checkFlatline("ignitionAdvance",1.5,"°","クランク角/カム角信号系統(トリガー同期)",
+      ["クランク角センサーの配線・エアギャップを確認する","他の所見(回転の乱れ等)と合わせて総合的に判断する"]);
+
+    /* --- Tier T: within-drive trend detection (experimental) --- */
+    function trendFinding(name, label, component, unit, thresholdDiff, interp){
+      var col = numCol(p,name);
+      if (!col) return;
+      var th = thirds(col);
+      if (!th.first.length || !th.last.length) return;
+      var fa = mean(th.first), la = mean(th.last);
+      if (fa==null || la==null) return;
+      var diff = la-fa;
+      if (Math.abs(diff) >= thresholdDiff){
+        add({tier:"T", severity:"trend", channel:name,
+          title: label+"が走行中に"+(diff>0?"上昇":"低下")+"傾向("+fa.toFixed(1)+unit+" → "+la.toFixed(1)+unit+")",
+          component: component,
+          desc: interp+" ※これはMemsFCR等の出典があるものではなく、今回新たに考案した実験的な検知です。1回のログだけで断定はできません。",
+          checks:["次回以降のログでも同じ傾向が続くか確認する","傾向が続くようなら、該当する系統を優先的に点検する"],
+          series: col, flagIdx: [], times:t, threshold:null});
+      }
+    }
+    trendFinding("longTermFuelTrim","長期燃調トリム","燃料系統(燃圧・インジェクター)・O2センサーのバイアス","%",8,
+      "走行の前半と後半で燃調トリムの平均が変化しています。まだしきい値(±25%)には達していませんが、緩やかな進行の可能性があります。この車はMAP式ECUなのでバキュームリークよりも燃圧・インジェクター・O2センサー側を優先して疑ってください。");
+    trendFinding("mainVoltage","バッテリー電圧","バッテリー・オルタネーター・アース線","V",0.3,
+      "走行の前半と後半でバッテリー電圧の平均が下がっています。充電系統の劣化の初期兆候である可能性があります。");
+
+    // lambda amplitude shrinking (separate from stuck-check: compares first-third vs last-third amplitude)
+    if (lambda){
+      var thl = thirds(lambda);
+      var sdF = stddev(thl.first), sdL = stddev(thl.last);
+      if (sdF!=null && sdL!=null && sdF>150 && sdL < sdF*0.5){
+        add({tier:"T", severity:"trend", channel:"lambdaVoltage_mV",
+          title:"O2センサーの振動の振幅が走行後半で小さくなる傾向(前半±"+sdF.toFixed(0)+"mV → 後半±"+sdL.toFixed(0)+"mV)",
+          component:"O2(ラムダ)センサー",
+          desc:"まだ完全な固着(Tier A基準)には達していませんが、振動が弱くなってきている可能性があります。センサー劣化の初期兆候として実験的に検知しています。",
+          checks:["次回以降のログでも同じ傾向が続くか確認する","完全に固着する前に交換を検討する"],
+          series: lambda, flagIdx: [], times:t, threshold:null});
+      }
+    }
+
+    return findings;
+  }
+
+  /* ---------- rendering ---------- */
+  function sevColorVar(sev){
+    return sev==="critical" ? "--sev-critical" : sev==="warning" ? "--sev-warning" : sev==="trend" ? "--tier-t" : "--sev-info";
+  }
+
+  function drawSpark(canvas, series, flagIdx, threshold, colorVar){
+    var ctx = canvas.getContext("2d");
+    var dpr = window.devicePixelRatio||1;
+    var w = canvas.clientWidth||150, h = canvas.clientHeight||56;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    ctx.scale(dpr,dpr);
+    ctx.clearRect(0,0,w,h);
+    if (!series){ return; }
+    var vals = series.filter(function(v){return v!=null && !isNaN(v);});
+    if (vals.length<2) return;
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (min===max){ min-=1; max+=1; }
+    var pad = 6, top=8, bottom=h-14;
+    var css = getComputedStyle(document.documentElement);
+    var lineColor = css.getPropertyValue(colorVar).trim() || css.getPropertyValue("--accent").trim();
+    var mutedColor = css.getPropertyValue("--text-muted").trim();
+
+    function x(i){ return pad + (i/(series.length-1))*(w-pad*2); }
+    function y(v){ return bottom - ((v-min)/(max-min))*(bottom-top); }
+
+    // flagged region shading
+    if (flagIdx && flagIdx.length){
+      ctx.fillStyle = lineColor; ctx.globalAlpha = 0.12;
+      flagIdx.forEach(function(i){
+        ctx.fillRect(x(i)-1, top, 2, bottom-top);
+      });
+      ctx.globalAlpha = 1;
+    }
+    // threshold line
+    if (threshold!=null && threshold>=min && threshold<=max){
+      ctx.strokeStyle = lineColor; ctx.globalAlpha=0.5; ctx.setLineDash([2,2]); ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(pad,y(threshold)); ctx.lineTo(w-pad,y(threshold)); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+    }
+    // line
+    ctx.strokeStyle = lineColor; ctx.lineWidth=1.6; ctx.beginPath();
+    var started=false;
+    series.forEach(function(v,i){
+      if (v==null||isNaN(v)) return;
+      if (!started){ ctx.moveTo(x(i),y(v)); started=true; } else { ctx.lineTo(x(i),y(v)); }
+    });
+    ctx.stroke();
+    // min/max labels
+    ctx.fillStyle = mutedColor; ctx.font = "9px 'IBM Plex Mono', monospace";
+    ctx.fillText(max.toFixed(0), pad, top+2);
+    ctx.textBaseline = "bottom";
+    ctx.fillText(min.toFixed(0), pad, h-2);
+    ctx.textBaseline = "alphabetic";
+  }
+
+  function rangeBarHtml(r, sev){
+    var min=r.min, max=r.max, span=max-min;
+    function pct(v){ return Math.max(0,Math.min(100, ((v-min)/span)*100)); }
+    var np1 = pct(r.normalMin), np2 = pct(r.normalMax);
+    var vp = pct(r.value);
+    var markerCls = sev==="critical" ? "" : sev==="warning" ? "warn" : "ok";
+    return '<div class="rangebar">'+
+      '<div class="rb-track">'+
+        '<div class="rb-normal" style="left:'+np1+'%;width:'+Math.max(0,np2-np1)+'%"></div>'+
+        '<div class="rb-marker '+markerCls+'" style="left:calc('+vp+'% - 1.5px)"></div>'+
+      '</div>'+
+      '<div class="rb-labels"><span>'+min+r.unit+'</span><span>正常範囲 '+r.normalMin+'〜'+r.normalMax+r.unit+'</span><span>'+max+r.unit+'</span></div>'+
+    '</div>';
+  }
+
+  function findingCard(f){
+    var el = document.createElement("div");
+    el.className = "finding "+f.severity;
+    var checks = f.checks.map(function(c){return "<li>"+c+"</li>";}).join("");
+    var readoutHtml = f.readout ? '<div class="readout">'+f.readout+'</div>' : "";
+    var rangeHtml = f.range ? rangeBarHtml(f.range, f.severity) : "";
+    el.innerHTML =
+      '<div class="finding-main">'+
+        '<div class="finding-top"><span class="finding-title">'+f.title+'</span>'+
+        '<span class="badge tier-'+f.tier+'">Tier '+f.tier+'</span></div>'+
+        '<div class="finding-component">疑わしい箇所: '+f.component+'</div>'+
+        readoutHtml + rangeHtml +
+        '<div class="finding-desc">'+f.desc+'</div>'+
+        '<ul class="finding-checks">'+checks+'</ul>'+
+      '</div>'+
+      '<div class="finding-chart"><canvas></canvas><div class="cap mono">'+(f.channel?COLUMN_LABELS[f.channel]||f.channel:"")+'</div></div>';
+    var canvas = el.querySelector("canvas");
+    requestAnimationFrame(function(){
+      drawSpark(canvas, f.series, f.flagIdx, f.threshold, sevColorVar(f.severity));
+    });
+    return el;
+  }
+
+  function render(p, findings){
+    var groups = {critical:[], warning:[], trend:[], info:[]};
+    findings.forEach(function(f){ (groups[f.severity]||groups.info).push(f); });
+
+    var statsEl = document.getElementById("stats");
+    statsEl.innerHTML =
+      statCard("critical","明確な異常",groups.critical.length)+
+      statCard("warning","要注意",groups.warning.length)+
+      statCard("trend","悪化傾向(実験的)",groups.trend.length)+
+      statCard("info","参考情報",groups.info.length);
+
+    fillGroup("findingsCritical","cntCritical",groups.critical,"明確な異常は見つかりませんでした。");
+    fillGroup("findingsWarning","cntWarning",groups.warning,"要注意の所見はありませんでした。");
+    fillGroup("findingsTrend","cntTrend",groups.trend,"悪化傾向は検知されませんでした。");
+    fillGroup("findingsInfo","cntInfo",groups.info,"参考情報はありません。");
+
+    // raw channel table
+    var rows = "<tr><th>列名</th><th>表示名</th><th>件数</th><th>最小</th><th>最大</th><th>平均</th><th>状態</th></tr>";
+    p.header.forEach(function(name){
+      if (name==="time") return;
+      var vals = p.cols[name];
+      var nums = vals.map(function(v){var f=parseFloat(v); return isNaN(f)?null:f;}).filter(function(v){return v!=null;});
+      var isBool = BOOL_COLS[name];
+      var label = COLUMN_LABELS[name] || name;
+      var unused = UNUSED_COLS[name];
+      var cls = unused ? "unused" : "";
+      var minmax = "-";
+      var avg = "-";
+      if (!isBool && nums.length){
+        minmax = Math.min.apply(null,nums).toFixed(1)+" 〜 "+Math.max.apply(null,nums).toFixed(1);
+        avg = (nums.reduce(function(a,b){return a+b;},0)/nums.length).toFixed(1);
+      } else if (isBool) {
+        var trueCount = vals.filter(function(v){return v==="true";}).length;
+        minmax = trueCount+" / "+vals.length+" 件 true";
+      }
+      rows += "<tr class='"+cls+"'><td class='mono'>"+name+"</td><td>"+label+"</td><td class='num mono'>"+vals.length+"</td>"+
+        "<td class='num mono'>"+(isBool?"-":minmax.split(" 〜 ")[0]||"-")+"</td>"+
+        "<td class='num mono'>"+(isBool?"-":(minmax.split(" 〜 ")[1]||"-"))+"</td>"+
+        "<td class='num mono'>"+(isBool?minmax:avg)+"</td>"+
+        "<td>"+(unused?"未使用(この個体では常に固定値)":"判定対象")+"</td></tr>";
+    });
+    document.getElementById("chanTable").innerHTML = rows;
+  }
+
+  function statCard(cls,label,n){
+    return "<div class='stat "+cls+"'><div class='n mono'>"+n+"</div><div class='l'>"+label+"</div></div>";
+  }
+  function fillGroup(elId,cntId,list,emptyText){
+    document.getElementById(cntId).textContent = list.length ? "("+list.length+"件)" : "";
+    var el = document.getElementById(elId);
+    el.innerHTML = "";
+    if (!list.length){
+      var d = document.createElement("div"); d.className="empty-ok"; d.textContent = "✓ "+emptyText;
+      el.appendChild(d); return;
+    }
+    list.forEach(function(f){ el.appendChild(findingCard(f)); });
+  }
+
+  /* ---------- wiring ---------- */
+  function run(text, label){
+    var p = parseCsv(text);
+    if (!p){ alert("CSVを読み込めませんでした。"); return; }
+    document.getElementById("fileName").innerHTML = label;
+    var findings = analyze(p);
+    render(p, findings);
+  }
+
+  function runSample(){
+    var g = generateSampleCsv();
+    var desc = g.scenarioNames.length
+      ? "今回仕込んだ異常: "+g.scenarioNames.join(" / ")
+      : "今回は異常なし(正常なログ)のパターンです";
+    run(g.csv, "サンプルデータ(自動生成) — "+desc);
+  }
+
+  document.getElementById("btnSample").addEventListener("click", runSample);
+  document.getElementById("fileInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){ run(reader.result, file.name); };
+    reader.readAsText(file);
+  });
+
+  // initial state at rest: sample data already analyzed
+  runSample();
+})();
+</script>
