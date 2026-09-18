@@ -36,8 +36,12 @@ class ConnectViewModel(
     private val _connecting = MutableStateFlow(false)
     val connecting: StateFlow<Boolean> = _connecting.asStateFlow()
 
+    private val _connectionError = MutableStateFlow(false)
+    val connectionError: StateFlow<Boolean> = _connectionError.asStateFlow()
+
     fun selectMode(mode: SourceMode) {
         _sourceMode.value = mode
+        _connectionError.value = false
         bleScanner.stopScan()
         when (mode) {
             SourceMode.BLUETOOTH -> bleScanner.startScan()
@@ -57,6 +61,7 @@ class ConnectViewModel(
 
     fun connectToDevice(bleDevice: BleDevice, onConnected: (EcuDataSource) -> Unit) {
         _connecting.value = true
+        _connectionError.value = false
         bleScanner.stopScan()
         bleDataSource.setDevice(bleDevice.device)
         viewModelScope.launch {
@@ -64,18 +69,23 @@ class ConnectViewModel(
             _connecting.value = false
             if (bleDataSource.connectionState.value == ConnectionState.CONNECTED) {
                 onConnected(bleDataSource)
+            } else {
+                _connectionError.value = true
             }
         }
     }
 
     fun connectUsbDriver(driver: UsbSerialDriver, onConnected: (EcuDataSource) -> Unit) {
         _connecting.value = true
+        _connectionError.value = false
         usbDataSource.setDriver(driver)
         viewModelScope.launch {
             usbDataSource.connect()
             _connecting.value = false
             if (usbDataSource.connectionState.value == ConnectionState.CONNECTED) {
                 onConnected(usbDataSource)
+            } else {
+                _connectionError.value = true
             }
         }
     }

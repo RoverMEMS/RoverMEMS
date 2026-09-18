@@ -13,7 +13,7 @@ interface ByteTransport {
      * Reads exactly [count] bytes, waiting up to [timeoutMs] in total.
      * Returns null if [count] bytes did not arrive within the timeout.
      */
-    suspend fun readExactly(count: Int, timeoutMs: Long = 500): ByteArray?
+    suspend fun readExactly(count: Int, timeoutMs: Long = 3000): ByteArray?
 
     /**
      * Discards any bytes already buffered from the link without waiting for

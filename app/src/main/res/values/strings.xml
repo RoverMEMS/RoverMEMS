@@ -24,6 +24,7 @@
     <string name="connect_usb_not_found">USBシリアルアダプタが見つかりません。ケーブルの接続を確認してください。</string>
     <string name="connect_usb_tap_device">接続するUSBアダプタをタップしてください。</string>
     <string name="connect_ble_tap_device">周辺のBLEデバイスをタップして接続してください。</string>
+    <string name="connect_error_failed">接続に失敗しました。配線・電源・ECUの状態を確認してもう一度お試しください。</string>
 
     <!-- GaugeScreen: general -->
     <string name="gauge_waiting_data">データ待機中…</string>

@@ -24,6 +24,7 @@
     <string name="connect_usb_not_found">No USB serial adapter found. Please check the cable connection.</string>
     <string name="connect_usb_tap_device">Tap the USB adapter to connect.</string>
     <string name="connect_ble_tap_device">Tap a nearby BLE device to connect.</string>
+    <string name="connect_error_failed">Connection failed. Please check the wiring, power, and ECU, then try again.</string>
 
     <!-- GaugeScreen: general -->
     <string name="gauge_waiting_data">Waiting for data…</string>

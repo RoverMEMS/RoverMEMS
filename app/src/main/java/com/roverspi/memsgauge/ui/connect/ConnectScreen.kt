@@ -44,6 +44,7 @@ fun ConnectScreen(app: RoverMemsApp, onConnected: (EcuDataSource) -> Unit) {
     )
     val mode by viewModel.sourceMode.collectAsState()
     val connecting by viewModel.connecting.collectAsState()
+    val connectionError by viewModel.connectionError.collectAsState()
     val devices by viewModel.discoveredDevices.collectAsState()
     val usbDrivers by viewModel.usbDrivers.collectAsState()
 
@@ -140,6 +141,15 @@ fun ConnectScreen(app: RoverMemsApp, onConnected: (EcuDataSource) -> Unit) {
 
             if (connecting) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+            }
+
+            if (connectionError && !connecting) {
+                Text(
+                    stringResource(R.string.connect_error_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
     }

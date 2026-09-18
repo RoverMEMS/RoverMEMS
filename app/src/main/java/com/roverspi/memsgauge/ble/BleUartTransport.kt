@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import com.roverspi.memsgauge.logging.DebugLog as Log
 import com.roverspi.memsgauge.protocol.ByteTransport
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -36,6 +37,14 @@ class BleUartTransport(private val context: Context) : ByteTransport {
     private val incomingBytes = Channel<Byte>(capacity = Channel.UNLIMITED)
 
     /**
+     * Holds the in-flight [write] call's continuation while waiting for
+     * [BluetoothGattCallback.onCharacteristicWrite] -- GATT only allows one
+     * outstanding operation at a time, so there's never more than one of
+     * these live.
+     */
+    private var writeContinuation: CancellableContinuation<Boolean>? = null
+
+    /**
      * Fired when the link drops AFTER [connectToDevice] already completed --
      * a disconnect during the initial handshake is reported via that
      * function's own return value instead. Lets [BleEcuDataSource] notice a
@@ -53,8 +62,9 @@ class BleUartTransport(private val context: Context) : ByteTransport {
             // 固まるケース(安物モジュールでたまに起きる)をここで打ち切る。
             // ここに来た時点でgattが残っていれば後始末する。
             Log.w(TAG, "connectToDevice: timed out after ${CONNECT_TIMEOUT_MS}ms")
+            // close() is deferred to onConnectionStateChange(STATE_DISCONNECTED)
+            // once Android confirms the disconnect actually completed.
             gatt?.disconnect()
-            gatt?.close()
             gatt = null
             null
         }
@@ -76,6 +86,12 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                             SERVICE_DISCOVERY_DELAY_MS
                         )
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        // Only close() once Android confirms the disconnect
+                        // actually completed -- closing right after calling
+                        // disconnect() (without waiting for this callback) is
+                        // a known cause of GATT_ERROR(133) and erratic
+                        // connect failures on the *next* attempt.
+                        g.close()
                         if (!resumed) {
                             resumed = true
                             continuation.resume(null, onCancellation = null)
@@ -111,6 +127,7 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                             } else {
                                 BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
                             }
+                            Log.d(TAG, "tx characteristic properties=$properties chosen writeType=$writeType")
                         }
                         val rxChar = service?.getCharacteristic(profile.rxCharUuid)
                         val descriptor = rxChar?.getDescriptor(CCCD_UUID)
@@ -165,6 +182,18 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                 }
 
                 @Suppress("DEPRECATION")
+                override fun onCharacteristicWrite(
+                    g: BluetoothGatt,
+                    characteristic: BluetoothGattCharacteristic,
+                    status: Int
+                ) {
+                    Log.d(TAG, "onCharacteristicWrite: status=$status")
+                    val continuation = writeContinuation ?: return
+                    writeContinuation = null
+                    continuation.resume(status == BluetoothGatt.GATT_SUCCESS, onCancellation = null)
+                }
+
+                @Suppress("DEPRECATION")
                 override fun onCharacteristicChanged(
                     g: BluetoothGatt,
                     characteristic: BluetoothGattCharacteristic
@@ -187,9 +216,26 @@ class BleUartTransport(private val context: Context) : ByteTransport {
             return false
         }
         characteristic.value = bytes
-        val ok = g.writeCharacteristic(characteristic)
-        if (!ok) Log.w(TAG, "write: writeCharacteristic() returned false")
-        return ok
+        // writeCharacteristic()'s own return value only means the request was
+        // queued -- it says nothing about whether the byte actually made it
+        // over the air. Wait for onCharacteristicWrite so a silent BLE-level
+        // write failure surfaces as a failed write instead of masquerading as
+        // "wrote fine, ECU just didn't echo."
+        return withTimeoutOrNull(WRITE_TIMEOUT_MS) {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                writeContinuation = continuation
+                val queued = g.writeCharacteristic(characteristic)
+                if (!queued) {
+                    Log.w(TAG, "write: writeCharacteristic() returned false")
+                    writeContinuation = null
+                    continuation.resume(false, onCancellation = null)
+                }
+            }
+        } ?: run {
+            Log.w(TAG, "write: onCharacteristicWrite never arrived within ${WRITE_TIMEOUT_MS}ms")
+            writeContinuation = null
+            false
+        }
     }
 
     override suspend fun readExactly(count: Int, timeoutMs: Long): ByteArray? =
@@ -205,8 +251,9 @@ class BleUartTransport(private val context: Context) : ByteTransport {
 
     @SuppressLint("MissingPermission")
     fun disconnect() {
+        // close() is deferred to onConnectionStateChange(STATE_DISCONNECTED)
+        // above, once Android confirms the disconnect actually completed.
         gatt?.disconnect()
-        gatt?.close()
         gatt = null
         txCharacteristic = null
     }
@@ -216,5 +263,6 @@ class BleUartTransport(private val context: Context) : ByteTransport {
         const val SERVICE_DISCOVERY_DELAY_MS = 600L
         const val CCCD_WRITE_DELAY_MS = 400L
         const val CONNECT_TIMEOUT_MS = 15_000L
+        const val WRITE_TIMEOUT_MS = 2_000L
     }
 }
