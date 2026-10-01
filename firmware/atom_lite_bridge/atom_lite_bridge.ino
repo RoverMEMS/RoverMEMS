@@ -1,5 +1,7 @@
 /*
  * RoverMEMS BLE bridge for M5Stack ATOM Lite (ESP32-PICO-D4)
+ * Copyright (C) 2026 RoverMEMS
+ * SPDX-License-Identifier: GPL-3.0-or-later (リポジトリ直下の LICENSE を参照)
  *
  * スマホ(RoverMEMSアプリ)とECU診断ポートの間で、データをそのまま横流しする
  * だけのプログラム。HM-10の代わりに使う(ATOM Liteは技適取得済み)。
