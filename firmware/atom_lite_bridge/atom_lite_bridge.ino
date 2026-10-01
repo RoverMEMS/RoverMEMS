@@ -22,7 +22,7 @@
  *   白く一瞬 = ECUからデータを受信
  *
  * Arduino IDE + "esp32 by Espressif Systems"(2.x/3.x どちらでも可)でビルド。
- * ボードは "M5Stack-ATOM"、書き込み速度(Upload Speed)は 115200 にする。
+ * ボードは "M5Atom"、書き込み速度(Upload Speed)は 115200 にする。
  */
 
 #include <BLEDevice.h>
