@@ -3,7 +3,7 @@
 クラシックミニ(ローバーミニ)のMEMS ECU向け、Android用の車両診断アプリです。USBまたはBluetooth経由でECUに接続し、ライブデータの表示・アクチュエータのテスト・データログの記録ができます。
 
 > **開発ステータス: 正式リリース前(v0.1)**
-> USB有線・Bluetooth無線とも、実車(1996年式ミニSPi / MEMS 1.3)での接続・ライブデータ取得を確認済みです。まだ開発中のバージョンのため、不具合が残っている可能性があります。
+> USB有線・Bluetooth無線(M5Stack ATOM Lite)とも、実車(1996年式ミニSPi / MEMS 1.3)での接続・ライブデータ取得を確認済みです。まだ開発中のバージョンのため、不具合が残っている可能性があります。
 
 *English: RoverMEMS is a free Android diagnostic app for the Rover Mini's MEMS ECU (tested on MEMS 1.3 SPi). Connect over a USB serial cable or a Bluetooth LE module to view live data, run actuator tests and record logs. The UI can be switched to English.*
 
@@ -25,10 +25,11 @@
 
 - USBシリアル(PL2303等)経由でのECU接続、ライブデータ取得
 - Bluetooth(BLE)モジュール経由でのワイヤレス接続
+  - エンジン始動で一瞬切れても、自動でつなぎ直します
 - シンプル/詳細/グラフ/アナログの4種類の表示モード
   - アナログモードは、実際の計器のような画像ベースの針メーターUI
 - アクチュエータテスト(燃料ポンプ、ファン、インジェクター、O2ヒーター等)
-- 走行データのログ記録・グラフ表示
+- 走行データの自動記録(接続中は自動で保存、最大50件)・グラフ表示
 - 日本語/英語の切り替えに対応
 
 ## 接続方法
@@ -36,9 +37,9 @@
 | 方法 | 必要なもの | 備考 |
 |---|---|---|
 | USB有線 | USBシリアルケーブル(PL2303等) + USB変換アダプタ(USB-A → スマホの端子) | 一番確実。スマホと車をケーブルでつなぐ |
-| Bluetooth無線 | BLEモジュール + レベル変換 | 配線不要でスマホから接続。作り方は [firmware/atom_lite_bridge](firmware/atom_lite_bridge/README.md) |
+| Bluetooth無線 | M5Stack ATOM Lite + レベル変換モジュール | スマホと車をケーブルでつながなくてよい。作り方は [firmware/atom_lite_bridge](firmware/atom_lite_bridge/README.md) |
 
-Bluetooth用モジュールは、技適を取得している **M5Stack ATOM Lite** に専用ファームウェアを書き込んで使います(部品・配線・書き込み手順はすべて公開しています)。
+Bluetooth用モジュールは、技適を取得している **M5Stack ATOM Lite** に専用ファームウェアを書き込んで使います(部品・配線・書き込み手順はすべて公開しています)。電源は車のUSBから取ります。
 
 ## 対応環境
 
