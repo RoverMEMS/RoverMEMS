@@ -17,7 +17,11 @@ class LogFileRepository(private val context: Context) {
         } else {
             listViaLegacyFile()
         }
-        return files.sortedByDescending { it.lastModifiedMs }
+        // MediaStoreはサブフォルダ(debug/)も1行として返すことがあり、一覧に
+        // 0KBの「debug」が出たうえ、保存数の整理でフォルダごと消されかねなかった。
+        return files
+            .filter { it.displayName.endsWith(".csv", ignoreCase = true) }
+            .sortedByDescending { it.lastModifiedMs }
     }
 
     /** Deletes the oldest log files beyond [maxCount], so the log folder doesn't grow forever. */

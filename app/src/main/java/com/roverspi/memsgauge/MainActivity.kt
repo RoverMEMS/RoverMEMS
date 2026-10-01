@@ -81,7 +81,8 @@ class MainActivity : ComponentActivity() {
                             onConnected = { source ->
                                 activeSource = source
                                 navController.navigate(ROUTE_GAUGES)
-                            }
+                            },
+                            onOpenLogs = { navController.navigate(ROUTE_LOGS) }
                         )
                     }
                     composable(ROUTE_GAUGES) {

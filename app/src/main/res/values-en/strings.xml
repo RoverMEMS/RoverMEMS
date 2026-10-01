@@ -14,6 +14,7 @@
 
     <!-- ConnectScreen -->
     <string name="connect_title">Rover Mini MEMS Diagnostics</string>
+    <string name="connect_open_logs">View Saved Logs</string>
     <string name="connect_select_source">Select a data source</string>
     <string name="connect_demo_mode">Demo Mode</string>
     <string name="connect_usb">USB</string>

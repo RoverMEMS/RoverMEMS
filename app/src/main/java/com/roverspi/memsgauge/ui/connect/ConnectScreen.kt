@@ -14,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roverspi.memsgauge.R
@@ -36,7 +38,11 @@ import com.roverspi.memsgauge.ui.LanguageToggleButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConnectScreen(app: RoverMemsApp, onConnected: (EcuDataSource) -> Unit) {
+fun ConnectScreen(
+    app: RoverMemsApp,
+    onConnected: (EcuDataSource) -> Unit,
+    onOpenLogs: () -> Unit = {}
+) {
     val context = LocalContext.current
     val bleScanner = remember { BleScanner(context) }
     val viewModel: ConnectViewModel = viewModel(
@@ -59,7 +65,7 @@ fun ConnectScreen(app: RoverMemsApp, onConnected: (EcuDataSource) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.connect_title)) },
+                title = { Text(stringResource(R.string.connect_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 actions = { LanguageToggleButton() }
             )
         }
@@ -70,86 +76,99 @@ fun ConnectScreen(app: RoverMemsApp, onConnected: (EcuDataSource) -> Unit) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(stringResource(R.string.connect_select_source), style = MaterialTheme.typography.titleMedium)
+            Column {
+                Text(stringResource(R.string.connect_select_source), style = MaterialTheme.typography.titleMedium)
 
-            Row(
-                modifier = Modifier.padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = { viewModel.selectMode(SourceMode.SIMULATOR) }) {
-                    Text(stringResource(R.string.connect_demo_mode))
-                }
-                Button(onClick = { viewModel.selectMode(SourceMode.USB) }) {
-                    Text(stringResource(R.string.connect_usb))
-                }
-                Button(onClick = {
-                    if (BlePermissions.hasRequiredPermissions(context)) {
-                        viewModel.selectMode(SourceMode.BLUETOOTH)
-                    } else {
-                        permissionLauncher.launch(BlePermissions.requiredPermissions())
+                Row(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(onClick = { viewModel.selectMode(SourceMode.SIMULATOR) }) {
+                        Text(stringResource(R.string.connect_demo_mode))
                     }
-                }) {
-                    Text(stringResource(R.string.connect_bluetooth))
-                }
-            }
-
-            when (mode) {
-                SourceMode.SIMULATOR -> {
-                    Text(stringResource(R.string.connect_demo_description))
-                    Button(
-                        onClick = { viewModel.connectSimulator(onConnected) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                    ) {
-                        Text(stringResource(if (connecting) R.string.connect_connecting else R.string.connect_start_demo))
+                    Button(onClick = { viewModel.selectMode(SourceMode.USB) }) {
+                        Text(stringResource(R.string.connect_usb))
+                    }
+                    Button(onClick = {
+                        if (BlePermissions.hasRequiredPermissions(context)) {
+                            viewModel.selectMode(SourceMode.BLUETOOTH)
+                        } else {
+                            permissionLauncher.launch(BlePermissions.requiredPermissions())
+                        }
+                    }) {
+                        Text(stringResource(R.string.connect_bluetooth))
                     }
                 }
-                SourceMode.USB -> {
-                    if (usbDrivers.isEmpty()) {
-                        Text(stringResource(R.string.connect_usb_not_found))
-                    } else {
-                        Text(stringResource(R.string.connect_usb_tap_device))
+
+                when (mode) {
+                    SourceMode.SIMULATOR -> {
+                        Text(stringResource(R.string.connect_demo_description))
+                        Button(
+                            onClick = { viewModel.connectSimulator(onConnected) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                        ) {
+                            Text(stringResource(if (connecting) R.string.connect_connecting else R.string.connect_start_demo))
+                        }
+                    }
+                    SourceMode.USB -> {
+                        if (usbDrivers.isEmpty()) {
+                            Text(stringResource(R.string.connect_usb_not_found))
+                        } else {
+                            Text(stringResource(R.string.connect_usb_tap_device))
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp)
+                            ) {
+                                items(usbDrivers) { driver ->
+                                    TextButton(onClick = { viewModel.connectUsbDriver(driver, onConnected) }) {
+                                        Text(driver.device.deviceName)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    SourceMode.BLUETOOTH -> {
+                        Text(stringResource(R.string.connect_ble_tap_device))
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp)
                         ) {
-                            items(usbDrivers) { driver ->
-                                TextButton(onClick = { viewModel.connectUsbDriver(driver, onConnected) }) {
-                                    Text(driver.device.deviceName)
+                            items(devices) { device ->
+                                TextButton(onClick = { viewModel.connectToDevice(device, onConnected) }) {
+                                    Text(device.name ?: device.address)
                                 }
                             }
                         }
                     }
                 }
-                SourceMode.BLUETOOTH -> {
-                    Text(stringResource(R.string.connect_ble_tap_device))
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                    ) {
-                        items(devices) { device ->
-                            TextButton(onClick = { viewModel.connectToDevice(device, onConnected) }) {
-                                Text(device.name ?: device.address)
-                            }
-                        }
-                    }
+
+                if (connecting) {
+                    CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+                }
+
+                if (connectionError && !connecting) {
+                    Text(
+                        stringResource(R.string.connect_error_failed),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
                 }
             }
 
-            if (connecting) {
-                CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
-            }
-
-            if (connectionError && !connecting) {
-                Text(
-                    stringResource(R.string.connect_error_failed),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+            // 保存済みログは接続しなくても見られるように(以前はデモモードで
+            // 接続してからメニューで開く必要があった)。
+            OutlinedButton(
+                onClick = onOpenLogs,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+            ) {
+                Text(stringResource(R.string.connect_open_logs))
             }
         }
     }
