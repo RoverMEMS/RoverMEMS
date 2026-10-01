@@ -1,10 +1,14 @@
 package com.roverspi.memsgauge.ui.gauges
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,6 +39,11 @@ private const val NEEDLE_HUB_FRACTION_Y = 0.652f
 // major tick marks reaching out to ~46.8% of the image width, so the
 // needle is scaled up slightly to reach ~42%, just inside the tick marks.
 private const val NEEDLE_LENGTH_SCALE = 1.12f
+
+// 新しい値が届くたびに針を一気に跳ばすとカクカク見えるので、次の値まで
+// この時間をかけて一定の速さで動かす(iPhoneのウェブ版と同じ0.4秒)。
+// データの更新間隔とほぼ同じにしておくと、針が止まらず動き続けて見える。
+private const val NEEDLE_ANIMATION_MS = 400
 
 /**
  * One anchor point for a non-linear ("expanded") gauge scale: [value] maps
@@ -88,7 +97,11 @@ fun AnalogGauge(
     // when unrotated. graphicsLayer's rotationZ is clockwise, same sense as
     // our angle sweep, so the needed rotation is simply the offset between
     // the two: target angle minus the needle's native 270° pose.
-    val needleRotationDeg = valueToAngleDeg(value) - 270f
+    val needleRotationDeg by animateFloatAsState(
+        targetValue = valueToAngleDeg(value) - 270f,
+        animationSpec = tween(durationMillis = NEEDLE_ANIMATION_MS, easing = LinearEasing),
+        label = "needleRotation"
+    )
 
     Box(modifier = modifier.size(sizeDp)) {
         Image(

@@ -23,6 +23,8 @@ class MemsProtocol(private val transport: ByteTransport) {
         const val HEARTBEAT_FOLLOW_UP_TIMEOUT_MS = 1000L
 
         const val BURST_PROBE_LISTEN_MS = 1500L
+
+        const val FRAME_7D_EVERY = 2
     }
 
     /**
@@ -40,6 +42,9 @@ class MemsProtocol(private val transport: ByteTransport) {
      * any step of the handshake failed.
      */
     suspend fun initLink(): EcuVersion? {
+        // つなぎ直した後は、前の接続の0x7Dを使い回さない
+        cachedFrame7d = null
+        readCount = 0
         if (!sendCommand(INIT_BYTE_A)) {
             Log.w(TAG, "initLink: INIT_BYTE_A (0xCA) got no valid echo")
             return null
@@ -140,7 +145,13 @@ class MemsProtocol(private val transport: ByteTransport) {
         return true
     }
 
-    /** Requests both data frames and merges them into a [MemsData] snapshot. */
+    // 0x7D(ラムダ・燃料トリム等)は0x80ほど速く変わらないので FRAME_7D_EVERY 回に
+    // 1回だけ取り、間は前回の値を使う。メーターに使う0x80の更新回数が増える
+    // (iPhoneのウェブ版と同じ。BLEは1往復が重いので効果が大きい)。
+    private var cachedFrame7d: MemsFrame7d? = null
+    private var readCount = 0
+
+    /** Requests the data frames and merges them into a [MemsData] snapshot. */
     suspend fun readData(ecuVersion: EcuVersion): MemsData? {
         if (!sendCommand(MemsDataCommand.REQ_DATA_80.byte)) return null
         val bytes80 = transport.readExactly(MemsFrame80.FRAME_SIZE)
@@ -150,13 +161,18 @@ class MemsProtocol(private val transport: ByteTransport) {
         }
         val frame80 = MemsFrameParser.parseFrame80(bytes80, ecuVersion)
 
-        if (!sendCommand(MemsDataCommand.REQ_DATA_7D.byte)) return null
-        val bytes7d = transport.readExactly(MemsFrame7d.FRAME_SIZE)
-        if (bytes7d == null) {
-            Log.w(TAG, "readData: frame7d body never arrived")
-            return null
+        var frame7d = cachedFrame7d
+        if (frame7d == null || readCount % FRAME_7D_EVERY == 0) {
+            if (!sendCommand(MemsDataCommand.REQ_DATA_7D.byte)) return null
+            val bytes7d = transport.readExactly(MemsFrame7d.FRAME_SIZE)
+            if (bytes7d == null) {
+                Log.w(TAG, "readData: frame7d body never arrived")
+                return null
+            }
+            frame7d = MemsFrameParser.parseFrame7d(bytes7d, ecuVersion)
+            cachedFrame7d = frame7d
         }
-        val frame7d = MemsFrameParser.parseFrame7d(bytes7d, ecuVersion)
+        readCount++
 
         return MemsData.fromFrames(frame80, frame7d, ecuVersion)
     }

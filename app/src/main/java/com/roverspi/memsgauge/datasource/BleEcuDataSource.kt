@@ -240,7 +240,10 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
 
     private companion object {
         const val TAG = "RoverMEMS"
-        const val POLL_INTERVAL_MS = 200L
+        // BLEは1回の取得自体に数百msかかるので、間の待ちは短くして更新回数を
+        // 稼ぐ(200→50ms、10-02)。ゼロにしないのは、エラークリア・部品テストが
+        // linkMutexを取れる隙間を残すため。
+        const val POLL_INTERVAL_MS = 50L
         const val FLUSH_RESYNC_THRESHOLD_MS = 4_000L
         const val FULL_RECONNECT_THRESHOLD_MS = 8_000L
         const val CONNECT_ATTEMPTS = 3
