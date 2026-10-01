@@ -319,6 +319,28 @@
   .finding-chart{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;}
   .finding-chart canvas{width:150px; height:56px; display:block;}
   .finding-chart .cap{font-size:10.5px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; text-align:center;}
+  .finding-chart.clickable{cursor:zoom-in; border-radius:8px; padding:6px; border:1px dashed transparent;}
+  .finding-chart.clickable:hover, .finding-chart.clickable:focus-visible{background:var(--surface-2); border-color:var(--accent); outline:none;}
+  .zoom-hint{font-size:11px; color:var(--accent-strong); font-weight:600;}
+
+  .modal{position:fixed; inset:0; z-index:50; background:rgba(8,12,8,0.6); display:flex; align-items:center; justify-content:center; padding:16px;}
+  .modal[hidden]{display:none;}
+  .modal-card{background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); width:min(980px,100%); max-height:calc(100vh - 32px); overflow:auto; padding:16px 18px 18px;}
+  .modal-head{display:flex; gap:12px; align-items:flex-start; justify-content:space-between; margin-bottom:8px;}
+  .modal-title{font-weight:700; font-size:15px; line-height:1.4;}
+  .modal-sub{font-size:12px; color:var(--text-muted); margin-top:2px;}
+  .modal-close{padding:6px 11px; flex:none;}
+  .modal-legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--text-muted); margin-bottom:6px;}
+  .modal-legend span{display:inline-flex; align-items:center; gap:6px;}
+  .lg{display:inline-block; width:18px; height:0; border-top:2px solid var(--text-muted);}
+  .lg-band{height:10px; border:none; background:var(--sev-critical); opacity:0.3; border-radius:2px;}
+  .lg-dash{border-top-style:dashed;}
+  #bigChart{width:100%; height:340px; display:block; touch-action:none; cursor:crosshair; border:1px solid var(--border); border-radius:8px; background:var(--surface);}
+  .modal-note{font-size:12px; color:var(--text-muted); margin:6px 2px 0;}
+  .modal-runs{margin-top:10px; font-size:13px;}
+  .modal-runs .runs-title{font-weight:700; margin-bottom:4px;}
+  .modal-runs ul{margin:0; padding-left:18px; line-height:1.7;}
+  @media (max-width:560px){ #bigChart{height:260px;} }
   @media (max-width:560px){
     .finding{grid-template-columns:1fr;}
     .finding-chart{align-items:flex-start;}
@@ -437,6 +459,22 @@
   </footer>
 </div>
 
+<div class="modal" id="chartModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="chartTitle">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="chartTitle"></div>
+        <div class="modal-sub mono" id="chartSub"></div>
+      </div>
+      <button type="button" class="btn modal-close" id="chartClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-legend" id="chartLegend"></div>
+    <canvas id="bigChart"></canvas>
+    <div class="modal-note" id="chartHint"></div>
+    <div class="modal-runs" id="chartRuns"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -446,6 +484,7 @@
   var lastParsed = null, lastFindings = null, lastSource = null;
   function T(ja,en){ return LANG==="ja"?ja:en; }
   function setLang(l){
+    closeChart();
     LANG = l;
     try{ localStorage.setItem("memsLang", l); }catch(e){}
     document.documentElement.lang = l;
@@ -1190,11 +1229,23 @@
         '<ul class="finding-checks">'+checks+'</ul>'+
         termHtml +
       '</div>'+
-      '<div class="finding-chart"><canvas></canvas><div class="cap mono">'+(f.channel?colLabel(f.channel):"")+'</div></div>';
+      '<div class="finding-chart"><canvas></canvas><div class="cap mono">'+(f.channel?colLabel(f.channel):"")+'</div>'+
+        (f.series ? '<div class="zoom-hint">🔍 '+T("クリックで拡大","Click to enlarge")+'</div>' : '')+'</div>';
     var canvas = el.querySelector("canvas");
     requestAnimationFrame(function(){
       drawSpark(canvas, f.series, f.flagIdx, f.threshold, sevColorVar(f.severity));
     });
+    var chartBox = el.querySelector(".finding-chart");
+    if (f.series && chartBox){
+      chartBox.classList.add("clickable");
+      chartBox.setAttribute("role","button");
+      chartBox.setAttribute("tabindex","0");
+      chartBox.setAttribute("aria-label", T("グラフを拡大して時間帯を確認","Enlarge the chart to inspect time ranges"));
+      chartBox.addEventListener("click", function(){ openChart(f); });
+      chartBox.addEventListener("keydown", function(ev){
+        if (ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); openChart(f); }
+      });
+    }
     var toggleBtn = el.querySelector(".term-toggle");
     if (toggleBtn){
       toggleBtn.addEventListener("click", function(){
@@ -1203,6 +1254,175 @@
       });
     }
     return el;
+  }
+
+  /* ---------- enlarged chart popup: full time series with the suspicious stretches highlighted ---------- */
+  var chartState = null, chartOpener = null;
+  function fmtHMS(sec){ return fmtTime(sec).slice(0,8); }
+  function timeLabel(f,i){
+    var s = f.times && f.times[i]!=null ? f.times[i] : null;
+    return s==null ? "#"+(i+1) : fmtHMS(s);
+  }
+  function runsOf(idx){
+    var runs = [];
+    idx.slice().sort(function(a,b){return a-b;}).forEach(function(i){
+      var last = runs[runs.length-1];
+      if (last && i-last.end<=3){ last.end=i; last.n++; } else runs.push({start:i,end:i,n:1});
+    });
+    return runs;
+  }
+  function fmtAxis(v,span){
+    return span<10 ? v.toFixed(2) : span<100 ? v.toFixed(1) : v.toFixed(0);
+  }
+  function openChart(f){
+    if (!f.series) return;
+    var flagSet = {};
+    (f.flagIdx||[]).forEach(function(i){ flagSet[i]=1; });
+    chartState = {f:f, hover:-1, flagSet:flagSet};
+    chartOpener = document.activeElement;
+    document.getElementById("chartTitle").textContent = f.title;
+    document.getElementById("chartSub").textContent = (f.channel?colLabel(f.channel):"");
+    document.getElementById("chartHint").textContent = T(
+      "グラフ上を動かす/タップすると、その時刻の値を確認できます。",
+      "Move over (or tap) the chart to read the value at that moment.");
+    var legend = '<span><i class="lg lg-line"></i>'+T("実測値","Measured value")+'</span>';
+    if (f.flagIdx && f.flagIdx.length) legend += '<span><i class="lg lg-band"></i>'+T("疑わしい区間","Suspicious stretch")+'</span>';
+    if (f.threshold!=null) legend += '<span><i class="lg lg-dash"></i>'+T("しきい値","Threshold")+' ('+f.threshold+')</span>';
+    document.getElementById("chartLegend").innerHTML = legend;
+    var listEl = document.getElementById("chartRuns");
+    if (f.flagIdx && f.flagIdx.length){
+      var runs = runsOf(f.flagIdx);
+      var shown = runs.slice(0,10);
+      var html = '<div class="runs-title">'+T("疑わしい時間帯","Suspicious time ranges")+' ('+runs.length+T("か所","")+')</div><ul>';
+      shown.forEach(function(r){
+        var vs = [];
+        for (var i=r.start;i<=r.end;i++){ if (flagSetHas(chartState,i) && f.series[i]!=null) vs.push(f.series[i]); }
+        var range = vs.length ? Math.min.apply(null,vs).toFixed(1)+(Math.min.apply(null,vs)===Math.max.apply(null,vs)?"":" 〜 "+Math.max.apply(null,vs).toFixed(1)) : "";
+        html += '<li><span class="mono">'+timeLabel(f,r.start)+(r.end>r.start?" 〜 "+timeLabel(f,r.end):"")+'</span> · '+r.n+T("件"," samples")+(range?' · <span class="mono">'+range+'</span>':'')+'</li>';
+      });
+      if (runs.length>shown.length) html += '<li>'+T("ほか","and ")+(runs.length-shown.length)+T("か所"," more")+'</li>';
+      listEl.innerHTML = html+'</ul>';
+    } else {
+      listEl.innerHTML = '<div class="runs-title">'+T("この所見は特定の時間帯ではなく、ログ全体の傾向から判定しています。","This finding comes from the overall pattern of the log rather than one specific time range.")+'</div>';
+    }
+    var m = document.getElementById("chartModal");
+    m.hidden = false;
+    document.body.style.overflow = "hidden";
+    document.getElementById("chartClose").focus();
+    requestAnimationFrame(drawBigChart);
+  }
+  function flagSetHas(st,i){ return !!st.flagSet[i]; }
+  function closeChart(){
+    var m = document.getElementById("chartModal");
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    document.body.style.overflow = "";
+    chartState = null;
+    if (chartOpener && chartOpener.focus) chartOpener.focus();
+  }
+  var CH = {L:52, R:14, T:14, B:30};
+  function chartGeom(canvas, n){
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    return {w:w, h:h, x:function(i){ return CH.L + (n>1 ? i/(n-1) : 0.5)*(w-CH.L-CH.R); }};
+  }
+  function drawBigChart(){
+    if (!chartState) return;
+    var f = chartState.f, series = f.series, n = series.length;
+    var canvas = document.getElementById("bigChart");
+    var dpr = window.devicePixelRatio||1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    var css = getComputedStyle(document.documentElement);
+    var lineColor = css.getPropertyValue(sevColorVar(f.severity)).trim() || css.getPropertyValue("--accent").trim();
+    var muted = css.getPropertyValue("--text-muted").trim();
+    var gridC = css.getPropertyValue("--border").trim();
+    var textC = css.getPropertyValue("--text").trim();
+    var surf = css.getPropertyValue("--surface").trim();
+
+    var vals = series.filter(function(v){return v!=null && !isNaN(v);});
+    if (vals.length<2) return;
+    var min = Math.min.apply(null,vals), max = Math.max.apply(null,vals);
+    if (f.threshold!=null){ min = Math.min(min,f.threshold); max = Math.max(max,f.threshold); }
+    if (min===max){ min-=1; max+=1; }
+    var padY = (max-min)*0.06; min -= padY; max += padY;
+    var span = max-min;
+    var g = chartGeom(canvas, n);
+    function y(v){ return CH.T + (1-(v-min)/(max-min))*(h-CH.T-CH.B); }
+
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textBaseline = "middle"; ctx.textAlign = "right";
+    for (var k=0;k<=4;k++){
+      var v = min + span*k/4, yy = y(v);
+      ctx.strokeStyle = gridC; ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(CH.L,yy); ctx.lineTo(w-CH.R,yy); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = muted;
+      ctx.fillText(fmtAxis(v,span), CH.L-8, yy);
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var ticks = Math.min(6,n);
+    for (var t=0;t<ticks;t++){
+      var idx = ticks>1 ? Math.round(t*(n-1)/(ticks-1)) : 0;
+      ctx.fillStyle = muted;
+      ctx.fillText(timeLabel(f,idx), g.x(idx), h-CH.B+8);
+    }
+
+    if (f.flagIdx && f.flagIdx.length){
+      ctx.fillStyle = lineColor; ctx.globalAlpha = 0.16;
+      runsOf(f.flagIdx).forEach(function(r){
+        var x0 = g.x(r.start), x1 = g.x(r.end);
+        var half = Math.max(1.5, (w-CH.L-CH.R)/Math.max(1,n-1)/2);
+        ctx.fillRect(x0-half, CH.T, (x1-x0)+half*2, h-CH.T-CH.B);
+      });
+      ctx.globalAlpha = 1;
+    }
+    if (f.threshold!=null){
+      ctx.strokeStyle = lineColor; ctx.globalAlpha = 0.7; ctx.setLineDash([6,4]); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(CH.L,y(f.threshold)); ctx.lineTo(w-CH.R,y(f.threshold)); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = lineColor; ctx.lineWidth = 1.6; ctx.lineJoin = "round";
+    ctx.beginPath();
+    var pen = false;
+    for (var i=0;i<n;i++){
+      var val = series[i];
+      if (val==null || isNaN(val)){ pen = false; continue; }
+      var gap = i>0 && f.times && f.times[i]!=null && f.times[i-1]!=null && (f.times[i]-f.times[i-1])>30;
+      if (!pen || gap){ ctx.moveTo(g.x(i), y(val)); pen = true; } else { ctx.lineTo(g.x(i), y(val)); }
+    }
+    ctx.stroke();
+
+    var hv = chartState.hover;
+    if (hv>=0 && series[hv]!=null){
+      var hx = g.x(hv), hy = y(series[hv]);
+      ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(hx,CH.T); ctx.lineTo(hx,h-CH.B); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = lineColor; ctx.strokeStyle = surf; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(hx,hy,4.5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      var line1 = timeLabel(f,hv);
+      var line2 = fmtAxis(series[hv],span) + (chartState.flagSet[hv] ? "  ⚠ "+T("疑わしい","suspicious") : "");
+      ctx.font = "12px 'IBM Plex Mono', monospace";
+      var tw = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width)+16;
+      var bx = hx+12; if (bx+tw>w-4) bx = hx-12-tw;
+      var by = Math.max(CH.T, Math.min(hy-24, h-CH.B-44));
+      ctx.fillStyle = surf; ctx.strokeStyle = gridC; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.rect(bx,by,tw,40); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = muted; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText(line1,bx+8,by+5);
+      ctx.fillStyle = textC;
+      ctx.fillText(line2,bx+8,by+22);
+    }
+  }
+  function chartPointer(ev){
+    if (!chartState) return;
+    var canvas = document.getElementById("bigChart");
+    var rect = canvas.getBoundingClientRect();
+    var n = chartState.f.series.length;
+    var frac = (ev.clientX-rect.left-CH.L)/(rect.width-CH.L-CH.R);
+    var idx = Math.round(Math.max(0,Math.min(1,frac))*(n-1));
+    if (idx!==chartState.hover){ chartState.hover = idx; drawBigChart(); }
   }
 
   function renderGlossary(){
@@ -1314,6 +1534,16 @@
     };
     reader.readAsText(file);
   });
+  document.getElementById("chartClose").addEventListener("click", closeChart);
+  document.getElementById("chartModal").addEventListener("click", function(ev){
+    if (ev.target === ev.currentTarget) closeChart();
+  });
+  document.addEventListener("keydown", function(ev){ if (ev.key==="Escape") closeChart(); });
+  window.addEventListener("resize", function(){ if (chartState) drawBigChart(); });
+  var bigCanvas = document.getElementById("bigChart");
+  bigCanvas.addEventListener("pointermove", chartPointer);
+  bigCanvas.addEventListener("pointerdown", chartPointer);
+  bigCanvas.addEventListener("pointerleave", function(){ if (chartState){ chartState.hover = -1; drawBigChart(); } });
   document.getElementById("langToggle").addEventListener("click", function(){
     setLang(LANG==="ja" ? "en" : "ja");
   });
