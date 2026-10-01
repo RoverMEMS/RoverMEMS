@@ -17,6 +17,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // 家と会社のPCでデバッグ署名を共通にする。PCごとの既定の鍵
+    // (~/.android/debug.keystore)だと、別のPCでビルドした版をスマホに
+    // 上書きできず、毎回アンインストールが必要になるため。鍵はGoogle
+    // ドライブ同期フォルダ(リポジトリの外、GitHubには載せない)に置く。
+    val sharedDebugKeystore = rootProject.file("../keys/rovermems-debug.keystore")
+
+    signingConfigs {
+        getByName("debug") {
+            if (sharedDebugKeystore.exists()) {
+                storeFile = sharedDebugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

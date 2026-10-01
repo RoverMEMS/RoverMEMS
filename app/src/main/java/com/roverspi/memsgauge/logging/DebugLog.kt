@@ -109,10 +109,14 @@ object DebugLog {
         if (openDay == today && current != null) return current
 
         current?.let { runCatching { it.close() } }
+        // 保持数の整理は今日のファイルを作る「前」に、かつ今日のファイルを
+        // 除外して行う。以前は作った直後に整理していたため、まだ
+        // DATE_MODIFIEDが入っていない新規ファイルが「最古」と誤判定されて
+        // 自分で削除され、その日のログが丸ごと消えていた(09-26実機で確認)。
+        runCatching { enforceRetention(excludeFileName = "debug_$today.txt") }
         val fresh = openTodayFile(today)
         writer = fresh
         openDay = today
-        runCatching { enforceRetention() }
         return fresh
     }
 
@@ -162,7 +166,7 @@ object DebugLog {
     }
 
     /** Deletes debug log files beyond [MAX_DEBUG_LOG_FILES], oldest first, so the folder doesn't grow forever. */
-    private fun enforceRetention() {
+    private fun enforceRetention(excludeFileName: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = appContext.contentResolver
             val relativePath = "${Environment.DIRECTORY_DOWNLOADS}/$LOG_SUBFOLDER/"
@@ -170,8 +174,8 @@ object DebugLog {
             resolver.query(
                 MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                 arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DATE_MODIFIED),
-                "${MediaStore.Downloads.RELATIVE_PATH} = ?",
-                arrayOf(relativePath),
+                "${MediaStore.Downloads.RELATIVE_PATH} = ? AND ${MediaStore.Downloads.DISPLAY_NAME} != ?",
+                arrayOf(relativePath, excludeFileName),
                 null
             )?.use { cursor ->
                 val idCol = cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID)
@@ -182,14 +186,15 @@ object DebugLog {
                     entries.add(cursor.getLong(dateCol) to uri)
                 }
             }
-            entries.sortedByDescending { it.first }.drop(MAX_DEBUG_LOG_FILES).forEach { (_, uri) ->
+            // 今日の分は除外済みなので、残す枠は1つ減らす
+            entries.sortedByDescending { it.first }.drop(MAX_DEBUG_LOG_FILES - 1).forEach { (_, uri) ->
                 runCatching { resolver.delete(uri, null, null) }
             }
         } else {
             @Suppress("DEPRECATION")
             val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), LOG_SUBFOLDER)
-            val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".txt") } ?: return
-            files.sortedByDescending { it.lastModified() }.drop(MAX_DEBUG_LOG_FILES).forEach { it.delete() }
+            val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".txt") && f.name != excludeFileName } ?: return
+            files.sortedByDescending { it.lastModified() }.drop(MAX_DEBUG_LOG_FILES - 1).forEach { it.delete() }
         }
     }
 }

@@ -11,6 +11,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.roverspi.memsgauge.logging.DebugLog as Log
+import com.roverspi.memsgauge.logging.describeBytes
 import com.roverspi.memsgauge.protocol.ByteTransport
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.channels.Channel
@@ -53,9 +54,20 @@ class BleUartTransport(private val context: Context) : ByteTransport {
      */
     var onUnexpectedDisconnect: (() -> Unit)? = null
 
+    /**
+     * 接続ごとに、最初の[RAW_NOTIFY_LOG_LIMIT]個の受信通知を中身ごと(16進+文字)
+     * ログに残す。実車で0xCAのエコーの代わりに0x54('T')/0x0D/0x0A('\r','\n')
+     * が返ってくる件の切り分け用 -- 1バイト目しか見ていないと、それが単発の
+     * ゴミなのか、モジュールが吐いている文字列の先頭なのか区別できない。
+     * ライブデータ取得中にログが膨れないよう件数を絞っている。
+     */
+    @Volatile
+    private var rawNotifyLogRemaining = 0
+
     @SuppressLint("MissingPermission")
     suspend fun connectToDevice(device: BluetoothDevice): BleUartProfile? =
         withTimeoutOrNull(CONNECT_TIMEOUT_MS) {
+            rawNotifyLogRemaining = RAW_NOTIFY_LOG_LIMIT
             connectToDeviceInternal(device)
         } ?: run {
             // 接続はしたがdiscoverServices()のコールバックが返ってこないまま
@@ -64,8 +76,15 @@ class BleUartTransport(private val context: Context) : ByteTransport {
             Log.w(TAG, "connectToDevice: timed out after ${CONNECT_TIMEOUT_MS}ms")
             // close() is deferred to onConnectionStateChange(STATE_DISCONNECTED)
             // once Android confirms the disconnect actually completed.
-            gatt?.disconnect()
+            // ただし接続が確立しきらないまま打ち切った場合はそのコールバックが
+            // 来ないことがあり、閉じられないgattが裏で接続を試み続けて次の
+            // 再試行の邪魔をしうるので、少し待ってから念のため閉じる。
+            val stale = gatt
+            stale?.disconnect()
             gatt = null
+            if (stale != null) {
+                Handler(Looper.getMainLooper()).postDelayed({ stale.close() }, STALE_GATT_CLOSE_DELAY_MS)
+            }
             null
         }
 
@@ -95,6 +114,11 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                         if (!resumed) {
                             resumed = true
                             continuation.resume(null, onCancellation = null)
+                        } else if (g !== gatt) {
+                            // こちらからdisconnect()した(gattはその時点でnull
+                            // または次の接続のものに置き換わっている)接続の
+                            // 切断完了通知。意図した切断なので自動再接続させない。
+                            Log.d(TAG, "BLE disconnect completed (status=$status)")
                         } else {
                             // A disconnect after the handshake already
                             // finished -- previously ignored entirely, which
@@ -114,6 +138,13 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                         g.getService(candidate.serviceUuid)?.getCharacteristic(candidate.txCharUuid) != null
                     }
                     Log.d(TAG, "onServicesDiscovered: status=$status matchedProfile=$profile")
+                    // 接続間隔を最短(7.5〜15ms)に要求する。既定(30〜50ms程度)だと
+                    // 「エコー受信→次のコマンド送信」の間隔が約113msに伸び、ECUが
+                    // 初期化シーケンスを受け付けなかった(09-27、これで約76msになり
+                    // 初接続成功)。接続直後(STATE_CONNECTED時点)に要求すると
+                    // status=40で切れる例があったため、サービス検出後に行う。
+                    val accepted = g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+                    Log.d(TAG, "requestConnectionPriority(HIGH) accepted=$accepted")
                     if (profile != null) {
                         val service = g.getService(profile.serviceUuid)
                         txCharacteristic = service?.getCharacteristic(profile.txCharUuid)?.apply {
@@ -198,7 +229,12 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                     g: BluetoothGatt,
                     characteristic: BluetoothGattCharacteristic
                 ) {
-                    characteristic.value?.forEach { byte -> incomingBytes.trySendBlocking(byte) }
+                    val value = characteristic.value ?: return
+                    if (rawNotifyLogRemaining > 0) {
+                        rawNotifyLogRemaining--
+                        Log.d(TAG, "rx notify (${value.size} bytes): ${describeBytes(value)}")
+                    }
+                    value.forEach { byte -> incomingBytes.trySendBlocking(byte) }
                 }
             }
             gatt = device.connectGatt(context, false, callback)
@@ -244,8 +280,12 @@ class BleUartTransport(private val context: Context) : ByteTransport {
         }
 
     override fun flushStaleBytes() {
-        while (incomingBytes.tryReceive().isSuccess) {
-            // discard -- draining whatever is already queued
+        val discarded = mutableListOf<Byte>()
+        while (true) {
+            discarded.add(incomingBytes.tryReceive().getOrNull() ?: break)
+        }
+        if (discarded.isNotEmpty()) {
+            Log.d(TAG, "flushStaleBytes: discarded ${discarded.size} bytes: ${describeBytes(discarded.toByteArray())}")
         }
     }
 
@@ -260,9 +300,13 @@ class BleUartTransport(private val context: Context) : ByteTransport {
 
     private companion object {
         const val TAG = "RoverMEMS"
+        const val RAW_NOTIFY_LOG_LIMIT = 50
         const val SERVICE_DISCOVERY_DELAY_MS = 600L
         const val CCCD_WRITE_DELAY_MS = 400L
-        const val CONNECT_TIMEOUT_MS = 15_000L
+        // 成功時は接続〜通知有効化まで約2秒。以前は15秒待ってからエラーに
+        // していたが、BleEcuDataSource側で自動再試行するので早めに見切る。
+        const val CONNECT_TIMEOUT_MS = 8_000L
+        const val STALE_GATT_CLOSE_DELAY_MS = 500L
         const val WRITE_TIMEOUT_MS = 2_000L
     }
 }

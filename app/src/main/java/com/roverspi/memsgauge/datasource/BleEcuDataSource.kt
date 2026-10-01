@@ -3,12 +3,14 @@ package com.roverspi.memsgauge.datasource
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import com.roverspi.memsgauge.logging.DebugLog as Log
+import com.roverspi.memsgauge.ble.BleUartProfile
 import com.roverspi.memsgauge.ble.BleUartTransport
 import com.roverspi.memsgauge.protocol.EcuVersion
 import com.roverspi.memsgauge.protocol.MemsActuatorCommand
 import com.roverspi.memsgauge.protocol.MemsData
 import com.roverspi.memsgauge.protocol.MemsProtocol
 import com.roverspi.memsgauge.protocol.toHexString
+import com.roverspi.memsgauge.usb.UsbSniffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,8 +45,10 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
 
     private val transport = BleUartTransport(context)
     private val protocol = MemsProtocol(transport)
+    private val usbSniffer = UsbSniffer(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var pollingJob: Job? = null
+    private var autoReconnectJob: Job? = null
     private var pendingDevice: BluetoothDevice? = null
 
     // The ECU link is a single request/response serial connection -- the poll
@@ -69,6 +73,8 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
             _connectionState.value = ConnectionState.ERROR
             return
         }
+        autoReconnectJob?.cancel()
+        autoReconnectJob = null
         pollingJob?.cancel()
         pollingJob = null
         transport.disconnect()
@@ -81,15 +87,73 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
         _ecuVersion.value = version
         _connectionState.value = ConnectionState.CONNECTED
         transport.onUnexpectedDisconnect = {
-            _connectionState.value = ConnectionState.ERROR
             pollingJob?.cancel()
+            pollingJob = null
+            startAutoReconnect()
         }
         pollingJob = scope.launch { pollLoop(version) }
     }
 
+    /**
+     * モジュールはACC電源なので、キーをSTART(セル)まで回すと電源が一瞬
+     * 落ちてBLEが切れる(09-28実車: イグニッションON→始動で毎回切断)。
+     * エラーで止めずに、モジュールが復帰するまで一定時間つなぎ直しを続ける。
+     * キーOFFで切れた場合は復帰しないので、時間切れでエラー表示にする。
+     */
+    private fun startAutoReconnect() {
+        autoReconnectJob?.cancel()
+        _connectionState.value = ConnectionState.RECONNECTING
+        autoReconnectJob = scope.launch {
+            val device = pendingDevice
+            if (device == null) {
+                _connectionState.value = ConnectionState.ERROR
+                return@launch
+            }
+            val deadline = System.currentTimeMillis() + AUTO_RECONNECT_WINDOW_MS
+            var round = 0
+            while (System.currentTimeMillis() < deadline) {
+                delay(AUTO_RECONNECT_INTERVAL_MS)
+                round++
+                Log.d(TAG, "autoReconnect: round $round")
+                transport.disconnect()
+                val version = performHandshake(device)
+                if (version != null) {
+                    Log.d(TAG, "autoReconnect: succeeded (round $round)")
+                    _ecuVersion.value = version
+                    _connectionState.value = ConnectionState.CONNECTED
+                    pollingJob = scope.launch { pollLoop(version) }
+                    return@launch
+                }
+            }
+            Log.e(TAG, "autoReconnect: gave up after ${AUTO_RECONNECT_WINDOW_MS}ms")
+            _connectionState.value = ConnectionState.ERROR
+        }
+    }
+
     /** Runs the connect+handshake sequence; also used by [pollLoop] to recover a stalled link. */
     private suspend fun performHandshake(device: BluetoothDevice): EcuVersion? {
-        val profile = transport.connectToDevice(device)
+        // USBシリアルケーブルが挿さっていれば、ハンドシェイクの間だけ
+        // ECUの白線を盗聴してログに残す(診断用、UsbSniffer参照)
+        usbSniffer.start()
+        try {
+            return performHandshakeInternal(device)
+        } finally {
+            usbSniffer.stop()
+        }
+    }
+
+    private suspend fun performHandshakeInternal(device: BluetoothDevice): EcuVersion? {
+        // BLE接続そのもの(サービス検出まで)は実車で約4割失敗するが、
+        // 09-26〜27のログでは失敗の直後の1回は毎回成功しており、2連続で
+        // 失敗した例は一度もない。ユーザーに「エラー」を見せる前に、
+        // 少し間を置いて自動で再試行する。
+        var profile: BleUartProfile? = null
+        for (attempt in 1..CONNECT_ATTEMPTS) {
+            profile = transport.connectToDevice(device)
+            if (profile != null) break
+            Log.w(TAG, "performHandshake: BLE connect attempt $attempt/$CONNECT_ATTEMPTS failed")
+            if (attempt < CONNECT_ATTEMPTS) delay(CONNECT_RETRY_DELAY_MS)
+        }
         if (profile == null) {
             Log.w(TAG, "performHandshake: no known BLE UART profile matched")
             return null
@@ -98,6 +162,8 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
         _ecuIdRaw.value = protocol.lastEcuIdBytes?.toHexString()
         if (version == null) {
             Log.w(TAG, "performHandshake: initLink() failed, no ECU response")
+            // 切断前に、まとめ送りで応答が変わるかを試してログに残す(診断用)
+            linkMutex.withLock { protocol.burstProbe() }
             transport.disconnect()
             return null
         }
@@ -106,6 +172,8 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
     }
 
     override fun disconnect() {
+        autoReconnectJob?.cancel()
+        autoReconnectJob = null
         pollingJob?.cancel()
         pollingJob = null
         transport.disconnect()
@@ -152,8 +220,9 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
                         lastSuccessMs = System.currentTimeMillis()
                         _connectionState.value = ConnectionState.CONNECTED
                     } else {
-                        Log.e(TAG, "pollLoop: reconnect failed, giving up")
-                        _connectionState.value = ConnectionState.ERROR
+                        Log.w(TAG, "pollLoop: reconnect failed, handing over to autoReconnect")
+                        pollingJob = null
+                        startAutoReconnect()
                         return
                     }
                 } else if (staleMs >= FLUSH_RESYNC_THRESHOLD_MS) {
@@ -174,5 +243,9 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
         const val POLL_INTERVAL_MS = 200L
         const val FLUSH_RESYNC_THRESHOLD_MS = 4_000L
         const val FULL_RECONNECT_THRESHOLD_MS = 8_000L
+        const val CONNECT_ATTEMPTS = 3
+        const val CONNECT_RETRY_DELAY_MS = 1_000L
+        const val AUTO_RECONNECT_WINDOW_MS = 60_000L
+        const val AUTO_RECONNECT_INTERVAL_MS = 1_500L
     }
 }
