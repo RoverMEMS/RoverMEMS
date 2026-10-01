@@ -34,8 +34,6 @@
     <string name="gauge_mode_analog">アナログ</string>
     <string name="gauge_clear_faults">エラークリア</string>
     <string name="gauge_actuator_tests">部品テスト</string>
-    <string name="gauge_log_stop">ログ停止</string>
-    <string name="gauge_log_start">ログ開始</string>
     <string name="gauge_log_list">ログ一覧</string>
     <string name="gauge_menu_more">その他のメニュー</string>
     <string name="gauge_recording">記録中: %1$s</string>

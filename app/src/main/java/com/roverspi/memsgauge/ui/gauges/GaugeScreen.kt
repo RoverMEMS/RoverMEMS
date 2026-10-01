@@ -136,10 +136,19 @@ fun GaugeScreen(
     val onReconnect: () -> Unit = { viewModel.reconnect() }
 
     // Only API 26-28 need this permission (see DataLogger); API 29+ writes
-    // through MediaStore instead, which needs no runtime permission.
+    // through MediaStore instead, which needs no runtime permission. Logging
+    // starts automatically once data arrives, so ask up front.
     val storagePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) viewModel.toggleLogging() }
+    ) { granted -> if (granted) viewModel.onStoragePermissionGranted() }
+    LaunchedEffect(Unit) {
+        val alreadyGranted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !alreadyGranted) {
+            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
 
     GaugeScreenContent(
         connectionState = connectionState,
@@ -154,17 +163,6 @@ fun GaugeScreen(
         onOpenLogs = onOpenLogs,
         isLogging = isLogging,
         logFilePath = logFilePath,
-        onToggleLogging = {
-            val needsLegacyStoragePermission = !isLogging && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
-            val alreadyGranted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-            if (needsLegacyStoragePermission && !alreadyGranted) {
-                storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else {
-                viewModel.toggleLogging()
-            }
-        },
         onDisconnect = {
             viewModel.disconnect()
             onDisconnect()
@@ -199,7 +197,6 @@ private fun GaugeScreenContent(
     onOpenLogs: () -> Unit = {},
     isLogging: Boolean = false,
     logFilePath: String? = null,
-    onToggleLogging: () -> Unit = {},
     onReconnect: () -> Unit = {},
     initialMode: DisplayMode = DisplayMode.SIMPLE
 ) {
@@ -362,13 +359,6 @@ private fun GaugeScreenContent(
             ) {
                 Button(onClick = onClearFaults, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.gauge_clear_faults), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Button(onClick = onToggleLogging, modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(if (isLogging) R.string.gauge_log_stop else R.string.gauge_log_start),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
             }
 

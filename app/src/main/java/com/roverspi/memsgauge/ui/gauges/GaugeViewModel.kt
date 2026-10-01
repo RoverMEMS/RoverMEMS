@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.roverspi.memsgauge.R
 import com.roverspi.memsgauge.datasource.ConnectionState
 import com.roverspi.memsgauge.datasource.EcuDataSource
+import com.roverspi.memsgauge.datasource.MockEcuDataSource
 import com.roverspi.memsgauge.logging.DataLogger
 import com.roverspi.memsgauge.protocol.EcuVersion
 import com.roverspi.memsgauge.protocol.MemsData
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +32,16 @@ class GaugeViewModel(
 
     private val logger = DataLogger(appContext)
 
+    // ログは手動操作なしで自動記録する: ECUからデータが届き始めたら新しい
+    // ファイルを開き、接続が切れたまま AUTO_STOP_AFTER_MS 経つと閉じる。
+    // エンジン始動時の一瞬の切断(自動つなぎ直しで数秒で戻る)ではファイルを
+    // 分けない。模擬データ(デモ)は記録しない。
+    private val isSimulated = dataSource is MockEcuDataSource
+    private var autoStopJob: Job? = null
+    // Android 8-9で保存の許可が無い等で開けなかった時、サンプルごとに
+    // 開き直そうとしないための印。許可が出たら onStoragePermissionGranted で解除。
+    private var autoStartBlocked = false
+
     private val _isLogging = MutableStateFlow(false)
     val isLogging: StateFlow<Boolean> = _isLogging.asStateFlow()
 
@@ -45,8 +58,26 @@ class GaugeViewModel(
             dataSource.latestData.collect { data ->
                 if (data != null) {
                     _history.value = (_history.value + data).takeLast(MAX_HISTORY_SIZE)
+                    if (!_isLogging.value && !isSimulated && !autoStartBlocked &&
+                        connectionState.value == ConnectionState.CONNECTED
+                    ) {
+                        startLogging()
+                    }
                     if (_isLogging.value) {
                         logger.logSample(data)
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            connectionState.collect { state ->
+                if (state == ConnectionState.CONNECTED) {
+                    autoStopJob?.cancel()
+                    autoStopJob = null
+                } else if (_isLogging.value && autoStopJob == null) {
+                    autoStopJob = viewModelScope.launch {
+                        delay(AUTO_STOP_AFTER_MS)
+                        stopLogging()
                     }
                 }
             }
@@ -76,17 +107,21 @@ class GaugeViewModel(
         _clearFaultsMessage.value = null
     }
 
-    fun toggleLogging() {
-        if (_isLogging.value) {
-            stopLogging()
-        } else {
-            val started = logger.start()
-            _isLogging.value = started
-            _logFilePath.value = logger.currentLogPath
-        }
+    /** Android 8-9で保存の許可が後から出た時に、自動記録を再開できるようにする。 */
+    fun onStoragePermissionGranted() {
+        autoStartBlocked = false
+    }
+
+    private fun startLogging() {
+        val started = logger.start()
+        _isLogging.value = started
+        _logFilePath.value = logger.currentLogPath
+        if (!started) autoStartBlocked = true
     }
 
     private fun stopLogging() {
+        autoStopJob?.cancel()
+        autoStopJob = null
         logger.stop()
         _isLogging.value = false
     }
@@ -107,5 +142,6 @@ class GaugeViewModel(
 
     private companion object {
         const val MAX_HISTORY_SIZE = 150
+        const val AUTO_STOP_AFTER_MS = 30_000L
     }
 }

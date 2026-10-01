@@ -34,8 +34,6 @@
     <string name="gauge_mode_analog">Analog</string>
     <string name="gauge_clear_faults">Clear Errors</string>
     <string name="gauge_actuator_tests">Component Test</string>
-    <string name="gauge_log_stop">Stop Logging</string>
-    <string name="gauge_log_start">Start Logging</string>
     <string name="gauge_log_list">Log List</string>
     <string name="gauge_menu_more">More options</string>
     <string name="gauge_recording">Recording: %1$s</string>

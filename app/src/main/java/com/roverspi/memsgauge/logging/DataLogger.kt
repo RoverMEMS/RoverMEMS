@@ -143,6 +143,6 @@ class DataLogger(private val context: Context) {
         // Matches MEMSGauge's logger.cpp column order exactly.
         const val HEADER = "#time,engineSpeed,waterTemp,intakeAirTemp,throttleVoltage," +
             "manifoldPressure,idleBypassPos,mainVoltage,idleswitch,closedloop,lambdaVoltage_mV"
-        const val MAX_LOG_FILES = 20
+        const val MAX_LOG_FILES = 50
     }
 }
