@@ -1,4 +1,5 @@
 <!doctype html>
+<meta charset="utf-8">
 <title>MEMS Log Diagnostics</title>
 <meta name="description" content="Rover Mini SPi(MEMS 1.3)の走行ログから異常の可能性と確認ポイントを提示する無料ツール。MemsFCRの公開情報を参考にしています。">
 <style>
@@ -1275,7 +1276,8 @@
   function run(text, label){
     var p = parseCsv(text);
     if (!p){ alert(T("CSVを読み込めませんでした。","Couldn't read that CSV file.")); return; }
-    document.getElementById("fileName").innerHTML = label;
+    var extra = (lastSource && lastSource.kind==="file") ? " — "+p.n+T("行を解析しました"," rows analyzed") : "";
+    document.getElementById("fileName").textContent = label+extra;
     var findings = analyze(p);
     render(p, findings);
   }
@@ -1302,9 +1304,13 @@
     var file = e.target.files[0];
     if (!file) return;
     var reader = new FileReader();
+    var input = e.target;
     reader.onload = function(){
       lastSource = {kind:"file", text:reader.result, name:file.name};
       run(reader.result, file.name);
+      input.value = "";
+      var target = document.getElementById("statsSection");
+      if (target && target.scrollIntoView) target.scrollIntoView({behavior:"smooth", block:"start"});
     };
     reader.readAsText(file);
   });
