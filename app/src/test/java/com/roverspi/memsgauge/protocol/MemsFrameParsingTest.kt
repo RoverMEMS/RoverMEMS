@@ -13,21 +13,16 @@ import org.junit.Test
 class MemsFrameParsingTest {
 
     @Test
-    fun ecuVersion_recognizesMems13Response() {
-        val id = byteArrayOf(0x99.toByte(), 0x00, 0x03, 0x03)
-        assertEquals(EcuVersion.MEMS_1_3, EcuVersion.fromD0Response(id))
-    }
-
-    @Test
     fun ecuVersion_recognizes1996MiniSpiResponse() {
         val id = byteArrayOf(0x9A.toByte(), 0x00, 0x02, 0x02)
         assertEquals(EcuVersion.MEMS_1_3, EcuVersion.fromD0Response(id))
     }
 
     @Test
-    fun ecuVersion_recognizesMems16Response() {
-        val id = byteArrayOf(0x99.toByte(), 0x00, 0x02, 0x03)
-        assertEquals(EcuVersion.MEMS_1_6, EcuVersion.fromD0Response(id))
+    fun ecuVersion_doesNotGuessFromUnconfirmedIds() {
+        // librosco's Mini SPi ID; not confirmed as 1.3 or 1.6 on a real car here.
+        val id = byteArrayOf(0x99.toByte(), 0x00, 0x03, 0x03)
+        assertEquals(EcuVersion.UNKNOWN, EcuVersion.fromD0Response(id))
     }
 
     @Test
@@ -186,6 +181,6 @@ class MemsFrameParsingTest {
 
     @Test
     fun memsData_carriesEcuVersionThrough() {
-        assertEquals(EcuVersion.MEMS_1_6, sampleData(EcuVersion.MEMS_1_6).ecuVersion)
+        assertEquals(EcuVersion.UNKNOWN, sampleData(EcuVersion.UNKNOWN).ecuVersion)
     }
 }

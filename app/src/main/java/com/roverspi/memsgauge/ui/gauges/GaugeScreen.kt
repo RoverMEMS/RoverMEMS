@@ -420,9 +420,8 @@ private fun EcuStatusBadge(
         ConnectionState.CONNECTING -> stringResource(R.string.ecu_status_connecting)
         ConnectionState.CONNECTED -> when (version) {
             EcuVersion.MEMS_1_3 -> stringResource(R.string.ecu_status_mems13)
-            EcuVersion.MEMS_1_6 -> stringResource(R.string.ecu_status_mems16)
-            // Show the raw ID bytes too so an unrecognized real ECU's
-            // response can just be read off the screen instead of guessed at.
+            // Show the raw ID bytes instead of guessing 1.3/1.6 from an
+            // unconfirmed ID (see EcuVersion).
             EcuVersion.UNKNOWN -> {
                 val idSuffix = ecuIdRaw?.let { stringResource(R.string.ecu_status_unknown_id_suffix, it) } ?: ""
                 stringResource(R.string.ecu_status_unknown, idSuffix)

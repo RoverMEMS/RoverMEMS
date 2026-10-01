@@ -44,9 +44,8 @@
     <string name="ecu_status_disconnected">Disconnected</string>
     <string name="ecu_status_connecting">Connecting…</string>
     <string name="ecu_status_mems13">MEMS 1.3 Detected</string>
-    <string name="ecu_status_mems16">MEMS 1.6 Detected</string>
-    <string name="ecu_status_unknown">Connected (Unknown ECU type%1$s)</string>
-    <string name="ecu_status_unknown_id_suffix"> / ID: %1$s</string>
+    <string name="ecu_status_unknown">MEMS Connected%1$s</string>
+    <string name="ecu_status_unknown_id_suffix"> (ID: %1$s)</string>
     <string name="ecu_status_reconnecting">Reconnecting…</string>
     <string name="ecu_status_error">Connection Error</string>
 

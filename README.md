@@ -45,7 +45,7 @@ Bluetooth用モジュールは、技適を取得している **M5Stack ATOM Lite
 
 - Android 8.1(API 26)以降
 - USB接続には、ケーブルをスマホの端子(USB-C等)に挿すための変換アダプタが必要
-- 対象ECU: Rover MEMS 1.3(SPi)/MEMS 1.6(MPI)。実車での動作確認はMEMS 1.3搭載車で実施
+- 対象ECU: Rover MEMS 1.3 / 1.6(ミニSPi)。実車での動作確認はMEMS 1.3搭載車で実施
 
 ## ビルド方法
 
