@@ -14,8 +14,8 @@
  * なる(09-27の知見: CA→75の間隔は約80〜110msが限度)。
  *
  * 配線(ATOM Lite側):
- *   G26 = UART送信 → レベル変換 LV1 → HV1 → ECU緑線(ECU RX)
- *   G32 = UART受信 ← レベル変換 LV2 ← HV2 ← ECU白線(ECU TX)
+ *   G21 = UART送信 → レベル変換 LV1 → HV1 → ECU緑線(ECU RX)
+ *   G25 = UART受信 ← レベル変換 LV2 ← HV2 ← ECU白線(ECU TX)
  *   3V3 → レベル変換 LV / 5V → レベル変換 HV / GND → レベル変換 GND
  *
  * 本体LED:
@@ -33,8 +33,10 @@
 #include <BLE2902.h>
 
 // ---- 設定 ----
-static const int UART_TX_PIN = 26;   // → ECU緑線(レベル変換経由)
-static const int UART_RX_PIN = 32;   // ← ECU白線(レベル変換経由)
+// 右側のピンソケット(G21/G25/5V/G)を使う。ジャンパワイヤのオスがそのまま挿さる。
+// (G26/G32はGrove端子の中にあり、ジャンパワイヤでは挿しにくい)
+static const int UART_TX_PIN = 21;   // → ECU緑線(レベル変換経由)
+static const int UART_RX_PIN = 25;   // ← ECU白線(レベル変換経由)
 static const uint32_t ECU_BAUD = 9600;
 static const int LED_PIN = 27;       // ATOM Lite内蔵のRGB LED(SK6812)
 
