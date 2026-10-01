@@ -19,6 +19,12 @@ class MemsFrameParsingTest {
     }
 
     @Test
+    fun ecuVersion_recognizes1996MiniSpiResponse() {
+        val id = byteArrayOf(0x9A.toByte(), 0x00, 0x02, 0x02)
+        assertEquals(EcuVersion.MEMS_1_3, EcuVersion.fromD0Response(id))
+    }
+
+    @Test
     fun ecuVersion_recognizesMems16Response() {
         val id = byteArrayOf(0x99.toByte(), 0x00, 0x02, 0x03)
         assertEquals(EcuVersion.MEMS_1_6, EcuVersion.fromD0Response(id))
