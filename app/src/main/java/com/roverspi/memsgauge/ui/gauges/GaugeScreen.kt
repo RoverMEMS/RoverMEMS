@@ -269,19 +269,20 @@ private fun GaugeScreenContent(
             // はタブレット(2x2)とスマホ(2x1)で形が違って被ることがあるので
             // グリッドの外に出し、右上(電池・アンテナ等のステータスバー)を
             // 避けて中央に。statusBarsPaddingでステータスバーの高さ分は自動で
-            // 避ける。
+            // 避ける。反転と照度のボタンは時計の左右に分けて押し間違いを防ぐ
+            // (同じ大きさなので時計がちょうど中央に来る)。
             Row(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                RetroClock()
                 AnalogOrientationToggleButton(
                     onClick = { reversedLandscape = OrientationManager.toggle(context) }
                 )
+                RetroClock()
                 AnalogNightModeButton()
             }
             // アナログモードは接続状態バッジを持たないので、通信が詰まって
@@ -926,16 +927,9 @@ private fun formatClockTime(): String =
     SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
 /**
- * Night-mode toggle for the analog screen, styled to match [RetroClock]'s
- * dashboard badge look since this screen doesn't use the TopAppBar (and
- * therefore not [com.roverspi.memsgauge.ui.NightModeToggleButton]) at all.
- * Placed right next to the clock since analog mode is the screen actually
- * used while driving, where the brightness toggle matters most.
- */
-/**
  * Flips which landscape orientation the アナログ screen locks to (see the
  * [OrientationManager]-backed `reversedLandscape` state in [GaugeScreen]).
- * Styled to match [AnalogNightModeButton] since it lives right next to it.
+ * Sits left of the clock, styled to match [AnalogNightModeButton] on the right.
  */
 @Composable
 private fun AnalogOrientationToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -955,6 +949,13 @@ private fun AnalogOrientationToggleButton(onClick: () -> Unit, modifier: Modifie
     }
 }
 
+/**
+ * Night-mode toggle for the analog screen, styled to match [RetroClock]'s
+ * dashboard badge look since this screen doesn't use the TopAppBar (and
+ * therefore not [com.roverspi.memsgauge.ui.NightModeToggleButton]) at all.
+ * Sits right of the clock since analog mode is the screen actually used
+ * while driving, where the brightness toggle matters most.
+ */
 @Composable
 private fun AnalogNightModeButton(modifier: Modifier = Modifier) {
     val effectiveNight by NightModeManager.effectiveNight.collectAsState()
