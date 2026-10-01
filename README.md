@@ -7,6 +7,14 @@
 
 *English: RoverMEMS is a free Android diagnostic app for the Rover Mini's MEMS ECU (tested on MEMS 1.3 SPi). Connect over a USB serial cable or a Bluetooth LE module to view live data, run actuator tests and record logs. The UI can be switched to English.*
 
+## 🧰 このページにある3つの道具
+
+| 道具 | できること | 使い方 |
+|---|---|---|
+| **RoverMEMS アプリ**(Android) | ECUにつないでライブデータ表示・アクチュエータテスト・ログ記録 | 下の「ダウンロード」からAPKを入れる |
+| **Bluetoothモジュール**(M5Stack ATOM Lite) | スマホとECUを無線でつなぐ中継役 | [作り方(部品・配線・書き込み)](firmware/atom_lite_bridge/README.md) |
+| **ログ解析ツール**(ウェブ) | アプリで記録したログ(CSV)を読み込んで、気になる点を探す | [ブラウザで開く](https://rovermems.github.io/RoverMEMS/)(インストール不要) |
+
 ## 📥 ダウンロード
 
 [**最新版をダウンロード(APK)**](https://github.com/RoverMEMS/RoverMEMS/releases/latest/download/app-debug.apk)

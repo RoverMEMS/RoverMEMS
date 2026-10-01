@@ -19,12 +19,13 @@ M5Stack ATOM Lite を、スマホ（RoverMEMS アプリ）と ECU 診断ポー�
 
 1. **Arduino IDE をインストール**: https://www.arduino.cc/en/software （無料）
 2. **ESP32 の追加**: Arduino IDE を開き、左側の「ボードマネージャ」（基板のアイコン）で `esp32` と検索し、**esp32 by Espressif Systems** をインストール
-3. **ATOM Lite を PC に USB でつなぐ**（データ通信対応のケーブルで）
-4. **このファイルを開く**: `firmware/atom_lite_bridge/atom_lite_bridge.ino`
-5. **ボードの選択**: メニュー「ツール → ボード → esp32 → **M5Atom**（検索欄に atom と打つと早い）」
-6. **ポートの選択**: 「ツール → ポート」で COM○ を選ぶ（ATOM Lite を抜き差しすると増減するのがそれ）
-7. **書き込み速度**: 「ツール → Upload Speed → **115200**」（ATOM Lite は速いと失敗しやすい）
-8. **書き込み**: 左上の「→」ボタン。下の欄に `Hard resetting via RTS pin...` と出れば完了。**初回は準備に時間がかかります**（PCによっては20〜30分）。2回目からは数分です
+3. **プログラムをダウンロード**: [RoverMEMS のトップページ](https://github.com/RoverMEMS/RoverMEMS)の緑の「**Code**」ボタン →「**Download ZIP**」。ダウンロードした ZIP を展開（右クリック →「すべて展開」）
+4. **ATOM Lite を PC に USB でつなぐ**（データ通信対応のケーブルで）
+5. **プログラムを開く**: Arduino IDE の「ファイル → 開く」で、展開したフォルダの中の `firmware/atom_lite_bridge/atom_lite_bridge.ino` を選ぶ
+6. **ボードの選択**: メニュー「ツール → ボード → esp32 → **M5Atom**（検索欄に atom と打つと早い）」
+7. **ポートの選択**: 「ツール → ポート」で COM○ を選ぶ（ATOM Lite を抜き差しすると増減するのがそれ）
+8. **書き込み速度**: 「ツール → Upload Speed → **115200**」（ATOM Lite は速いと失敗しやすい）
+9. **書き込み**: 左上の「→」ボタン。下の欄に `Hard resetting via RTS pin...` と出れば完了。**初回は準備に時間がかかります**（PCによっては20〜30分）。2回目からは数分です
 
 書き込み後、本体の LED が**青く点滅**していれば正常です。
 
