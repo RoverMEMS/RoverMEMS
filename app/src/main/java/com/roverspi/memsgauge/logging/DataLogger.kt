@@ -50,7 +50,7 @@ class DataLogger(private val context: Context) {
 
     fun start(): Boolean {
         if (isLogging) return true
-        val fileName = "memsgauge_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".csv"
+        val fileName = "rovermems_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".csv"
 
         return try {
             val opened = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
