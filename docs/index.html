@@ -378,6 +378,28 @@
   table.chantable tr.unused td{color:var(--text-muted); font-style:italic;}
   .table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface);}
 
+  /* all-channel chart viewer */
+  #acModal .ac-card{width:min(1200px,100%); height:calc(100vh - 32px);}
+  .ac-tools{position:sticky; top:-16px; z-index:2; background:var(--surface); display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px 0;}
+  .ac-tools .btn{padding:6px 12px; min-width:40px;}
+  .ac-range{font-size:12px; color:var(--text-muted); margin-left:6px;}
+  .ac-cursor{font-size:12px; color:var(--accent-strong); font-weight:600;}
+  .ac-pick{margin:4px 0 2px;}
+  .ac-pick summary{cursor:pointer; font-size:13px; font-weight:600; color:var(--accent-strong); padding:4px 0;}
+  .ac-chips{display:flex; flex-wrap:wrap; gap:6px; padding:6px 0;}
+  .ac-chip{font:inherit; font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer;}
+  .ac-chip.on{background:var(--accent); border-color:var(--accent); color:var(--surface);}
+  .ac-row{margin-top:10px;}
+  .ac-head{display:flex; justify-content:space-between; gap:8px; font-size:12.5px;}
+  .ac-label{font-weight:600;}
+  .ac-val{color:var(--accent-strong); font-weight:600;}
+  canvas.ac-canvas{display:block; width:100%; height:120px; touch-action:pan-y; cursor:crosshair;}
+  @media (max-width:560px){
+    #acModal{padding:0;}
+    #acModal .ac-card{height:100vh; max-height:100vh; border-radius:0;}
+    canvas.ac-canvas{height:100px;}
+  }
+
   footer{
     margin-top:36px;
     padding-top:16px;
@@ -414,6 +436,7 @@
     <button class="btn primary" id="btnSample">サンプルログを生成して試す</button>
     <label class="btn" for="fileInput" id="fileLabel">CSVログを読み込む</label>
     <input type="file" id="fileInput" accept=".csv,text/csv">
+    <button type="button" class="btn" id="btnAllCharts">全項目のグラフを見る(全時間帯)</button>
     <span class="file-name" id="fileName">サンプルデータ表示中</span>
     <div class="hint" id="controlsHint">RoverMEMSアプリの走行ログCSV(旧10列 / 新34列どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。</div>
   </section>
@@ -475,6 +498,33 @@
   </div>
 </div>
 
+<div class="modal" id="acModal" hidden>
+  <div class="modal-card ac-card" role="dialog" aria-modal="true" aria-labelledby="acTitle">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="acTitle"></div>
+        <div class="modal-sub mono" id="acFile"></div>
+      </div>
+      <button type="button" class="btn modal-close" id="acClose" aria-label="Close">✕</button>
+    </div>
+    <div class="ac-tools">
+      <button type="button" class="btn" id="acAll"></button>
+      <button type="button" class="btn" id="acIn" aria-label="Zoom in">＋</button>
+      <button type="button" class="btn" id="acOut" aria-label="Zoom out">−</button>
+      <button type="button" class="btn" id="acLeft" aria-label="Earlier">◀</button>
+      <button type="button" class="btn" id="acRight" aria-label="Later">▶</button>
+      <span class="mono ac-range" id="acRange"></span>
+      <span class="mono ac-cursor" id="acCursor"></span>
+    </div>
+    <div class="modal-note" id="acHint"></div>
+    <details class="ac-pick">
+      <summary id="acPickTitle"></summary>
+      <div class="ac-chips" id="acChips"></div>
+    </details>
+    <div id="acRows"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -485,6 +535,7 @@
   function T(ja,en){ return LANG==="ja"?ja:en; }
   function setLang(l){
     closeChart();
+    closeAllCharts();
     LANG = l;
     try{ localStorage.setItem("memsLang", l); }catch(e){}
     document.documentElement.lang = l;
@@ -506,6 +557,7 @@
     glossarySummary:{ja:"はじめに: 出てくる用語の解説(タップで開閉)",en:"Start here: glossary of terms used (tap to expand)"},
     btnSample:{ja:"サンプルログを生成して試す",en:"Generate a sample log to try"},
     fileLabel:{ja:"CSVログを読み込む",en:"Load a CSV log"},
+    btnAllCharts:{ja:"全項目のグラフを見る(全時間帯)",en:"Chart every channel (whole log)"},
     controlsHint:{ja:"RoverMEMSアプリの走行ログCSV(旧10列 / 新34列どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。",
       en:"You can load a RoverMEMS app driving log CSV (either the old 10-column or new 34-column format). If some columns are missing, only the checks for those columns are skipped automatically. \"Generate a sample log\" builds fictional data with a random set of injected issues each time (not your real data)."},
     stTitleSummary:{ja:"検出結果サマリー",en:"Summary of findings"},
@@ -1492,6 +1544,361 @@
     list.forEach(function(f){ el.appendChild(findingCard(f)); });
   }
 
+  /* ---------- all-channel viewer: every numeric channel over the whole log, sharing one
+     zoomable/pannable time window, so normal behaviour (warm-up curves etc.) can be explored too ---------- */
+  var AC = null;
+  var AC_DEFAULT = ["engineSpeed","waterTemp","intakeAirTemp","manifoldPressure","throttleVoltage","mainVoltage","idleBypassPos","lambdaVoltage_mV"];
+  var AC_GAP_SEC = 30;       // a pause longer than this is drawn as a break (dotted line), like the popup chart
+  var AC_MIN_SPAN = 8;       // never zoom in further than this many samples across the screen
+  var ACG = {L:52, R:12, T:8, B:20};
+
+  function acChannels(p){
+    return p.header.filter(function(h){
+      if (h==="time" || BOOL_COLS[h] || UNUSED_COLS[h]) return false;
+      var c = numCol(p,h);
+      return c && c.some(function(v){ return v!=null; });
+    });
+  }
+  function acLoadSel(chans){
+    var saved = null;
+    try{ saved = JSON.parse(localStorage.getItem("memsAllChartsSel")||"null"); }catch(e){}
+    var sel = (Array.isArray(saved) ? saved : AC_DEFAULT).filter(function(c){ return chans.indexOf(c)>=0; });
+    return sel.length ? sel : chans.slice(0,6);
+  }
+  function acSaveSel(){ try{ localStorage.setItem("memsAllChartsSel", JSON.stringify(AC.sel)); }catch(e){} }
+
+  function openAllCharts(){
+    if (!lastParsed) return;
+    var p = lastParsed;
+    var chans = acChannels(p);
+    if (!chans.length || p.n<2) return;
+    var times = timeSecCol(p);
+    var data = {};
+    chans.forEach(function(c){ data[c] = numCol(p,c); });
+    var breakSet = {}, breaks = [];
+    if (times){
+      for (var i=1;i<p.n;i++){
+        if (times[i]!=null && times[i-1]!=null && Math.abs(times[i]-times[i-1])>AC_GAP_SEC){ breakSet[i]=1; breaks.push(i); }
+      }
+    }
+    // shade the stretches the analyzer flagged, per channel (only when the finding's series lines up with the log)
+    var flags = {};
+    (lastFindings||[]).forEach(function(f){
+      if (f.channel && f.flagIdx && f.flagIdx.length && f.series && f.series.length===p.n){
+        (flags[f.channel] = flags[f.channel]||[]).push({runs:runsOf(f.flagIdx), sev:f.severity});
+      }
+    });
+    AC = {n:p.n, times:times, chans:chans, data:data, sel:acLoadSel(chans), a:0, b:p.n-1, hover:-1,
+          breaks:breaks, breakSet:breakSet, flags:flags, pointers:{}, drag:null, raf:0, rows:[], opener:document.activeElement};
+    document.getElementById("acTitle").textContent = T("全項目のグラフ","All channels");
+    document.getElementById("acFile").textContent = document.getElementById("fileName").textContent;
+    document.getElementById("acAll").textContent = T("全体","Fit all");
+    document.getElementById("acHint").textContent = T(
+      "PC: ドラッグした範囲を拡大 / ダブルクリックで全体 / Ctrl+ホイール(トラックパッドはピンチ)で拡大縮小 / Shift+ホイールで左右に移動。スマホ: 2本指で広げて拡大、1本指で左右になぞって移動、タップでその時刻の値。色の帯=診断で疑わしいと判定された区間、縦の点線=記録の途切れ(30秒以上)。",
+      "PC: drag across a chart to zoom into that range / double-click to fit all / Ctrl+wheel (or trackpad pinch) to zoom / Shift+wheel to scroll sideways. Phone: pinch to zoom, swipe sideways with one finger to move, tap to read values. Coloured bands = stretches the analyzer flagged; dotted vertical lines = breaks in recording (30s+).");
+    acBuildChips();
+    acBuildRows();
+    document.getElementById("acModal").hidden = false;
+    document.body.style.overflow = "hidden";
+    document.getElementById("acClose").focus();
+    requestAnimationFrame(acDraw);
+  }
+  function closeAllCharts(){
+    var m = document.getElementById("acModal");
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    document.body.style.overflow = "";
+    var opener = AC && AC.opener;
+    AC = null;
+    if (opener && opener.focus) opener.focus();
+  }
+  function acBuildChips(){
+    var box = document.getElementById("acChips");
+    box.innerHTML = "";
+    document.getElementById("acPickTitle").textContent = T("表示する項目を選ぶ","Choose channels")+" ("+AC.sel.length+"/"+AC.chans.length+")";
+    AC.chans.forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ac-chip"+(AC.sel.indexOf(c)>=0?" on":"");
+      b.setAttribute("aria-pressed", AC.sel.indexOf(c)>=0 ? "true" : "false");
+      b.textContent = colLabel(c);
+      b.addEventListener("click", function(){
+        var k = AC.sel.indexOf(c);
+        if (k>=0){ if (AC.sel.length>1) AC.sel.splice(k,1); }
+        else AC.sel.push(c);
+        AC.sel = AC.chans.filter(function(x){ return AC.sel.indexOf(x)>=0; });
+        acSaveSel();
+        acBuildChips();
+        acBuildRows();
+        acDraw();
+      });
+      box.appendChild(b);
+    });
+  }
+  function acBuildRows(){
+    var box = document.getElementById("acRows");
+    box.innerHTML = "";
+    AC.rows = AC.sel.map(function(name){
+      var row = document.createElement("div");
+      row.className = "ac-row";
+      row.innerHTML = '<div class="ac-head"><span class="ac-label"></span><span class="ac-val mono"></span></div><canvas class="ac-canvas"></canvas>';
+      row.querySelector(".ac-label").textContent = colLabel(name);
+      var canvas = row.querySelector("canvas");
+      canvas.setAttribute("role","img");
+      canvas.setAttribute("aria-label", colLabel(name));
+      acAttach(canvas);
+      box.appendChild(row);
+      return {name:name, canvas:canvas, valEl:row.querySelector(".ac-val")};
+    });
+  }
+
+  function acSchedule(){
+    if (!AC || AC.raf) return;
+    AC.raf = requestAnimationFrame(function(){ if (!AC) return; AC.raf = 0; acDraw(); });
+  }
+  function acTime(i){ var s = AC.times && AC.times[i]; return s==null ? "#"+(i+1) : fmtHMS(s); }
+  function acFmt(v){ return v==null ? "--" : (Math.abs(v-Math.round(v))<1e-9 ? String(Math.round(v)) : v.toFixed(2)); }
+  function acDraw(){
+    if (!AC) return;
+    var css = getComputedStyle(document.documentElement);
+    AC.rows.forEach(function(r){ acDrawRow(r, css); });
+    var ia = Math.max(0,Math.round(AC.a)), ib = Math.min(AC.n-1,Math.round(AC.b));
+    var secs = AC.times && AC.times[ia]!=null && AC.times[ib]!=null ? AC.times[ib]-AC.times[ia] : null;
+    var dur = "";
+    if (secs!=null && secs>=0){
+      var mm = Math.floor(secs/60), ss = Math.round(secs%60);
+      dur = mm>0 ? mm+T("分","m ")+ss+T("秒","s") : ss+T("秒","s");
+      if (AC.breaks.some(function(b){ return b>ia && b<=ib; })) dur = T("途切れを含む","includes breaks");
+    }
+    document.getElementById("acRange").textContent = acTime(ia)+" 〜 "+acTime(ib)+" · "+(ib-ia+1)+T("件"," samples")+(dur?" · "+dur:"");
+    document.getElementById("acCursor").textContent = AC.hover>=0 ? T("カーソル ","Cursor ")+acTime(AC.hover) : "";
+  }
+  function acDrawRow(r, css){
+    var canvas = r.canvas, dpr = window.devicePixelRatio||1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    var lineC = css.getPropertyValue("--accent").trim();
+    var muted = css.getPropertyValue("--text-muted").trim();
+    var gridC = css.getPropertyValue("--border").trim();
+    var surf = css.getPropertyValue("--surface").trim();
+    var s = AC.data[r.name], n = AC.n, a = AC.a, b = AC.b;
+    var i0 = Math.max(0,Math.floor(a)), i1 = Math.min(n-1,Math.ceil(b));
+    r.valEl.textContent = AC.hover>=0 ? acFmt(s[AC.hover]) : "";
+    var min = Infinity, max = -Infinity;
+    for (var i=i0;i<=i1;i++){ var v = s[i]; if (v!=null){ if (v<min) min=v; if (v>max) max=v; } }
+    if (min===Infinity) return;
+    if (min===max){ min -= 1; max += 1; }
+    var padY = (max-min)*0.08; min -= padY; max += padY;
+    var top = ACG.T, bottom = h-ACG.B, plotW = w-ACG.L-ACG.R;
+    function y(v){ return top+(1-(v-min)/(max-min))*(bottom-top); }
+    function x(i){ return ACG.L+(i-a)/(b-a)*plotW; }
+
+    ctx.font = "10.5px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (var k=0;k<=2;k++){
+      var gv = min+(max-min)*k/2, gy = y(gv);
+      ctx.strokeStyle = gridC; ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(ACG.L,gy); ctx.lineTo(w-ACG.R,gy); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = muted;
+      ctx.fillText(fmtAxis(gv,max-min), ACG.L-6, gy);
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    var ticks = Math.max(2, Math.min(6, Math.floor(plotW/95)));
+    for (var t=0;t<ticks;t++){
+      var ti = Math.min(n-1, Math.max(0, Math.round(a+t*(b-a)/(ticks-1))));
+      var tx = Math.min(Math.max(x(ti), ACG.L+26), w-ACG.R-26);
+      ctx.fillStyle = muted;
+      ctx.fillText(acTime(ti), tx, bottom+5);
+    }
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(ACG.L, 0, plotW, h); ctx.clip();
+    (AC.flags[r.name]||[]).forEach(function(fl){
+      ctx.fillStyle = css.getPropertyValue(sevColorVar(fl.sev)).trim() || lineC;
+      ctx.globalAlpha = 0.16;
+      fl.runs.forEach(function(run){
+        if (run.end < i0-1 || run.start > i1+1) return;
+        var x0 = x(run.start-0.5), x1 = x(run.end+0.5);
+        ctx.fillRect(x0, top, Math.max(2, x1-x0), bottom-top);
+      });
+      ctx.globalAlpha = 1;
+    });
+    ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    AC.breaks.forEach(function(bi){
+      if (bi < i0 || bi > i1+1) return;
+      var bx = x(bi-0.5);
+      ctx.beginPath(); ctx.moveTo(bx,top); ctx.lineTo(bx,bottom); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    if (AC.drag && AC.drag.mode==="select" && AC.drag.moved){
+      var sx0 = x(Math.min(AC.drag.startIdx,AC.drag.curIdx)), sx1 = x(Math.max(AC.drag.startIdx,AC.drag.curIdx));
+      ctx.fillStyle = lineC; ctx.globalAlpha = 0.12;
+      ctx.fillRect(sx0, top, sx1-sx0, bottom-top);
+      ctx.globalAlpha = 1;
+    }
+
+    // Long logs: when there are more samples than pixels, draw each pixel column's min-max
+    // so peaks and dips survive at any zoom; zoomed in, draw every sample.
+    ctx.strokeStyle = lineC; ctx.lineWidth = 1.5; ctx.lineJoin = "round";
+    ctx.beginPath();
+    var pen = false;
+    if (i1-i0+1 > plotW*1.5){
+      for (var px=0; px<plotW; px++){
+        var s0 = Math.max(0, Math.floor(a+(px/plotW)*(b-a)));
+        var s1 = Math.min(n-1, Math.floor(a+((px+1)/plotW)*(b-a)));
+        var lo = Infinity, hi = -Infinity, brk = false;
+        for (var j=s0;j<=s1;j++){
+          if (AC.breakSet[j]) brk = true;
+          var vj = s[j];
+          if (vj!=null){ if (vj<lo) lo=vj; if (vj>hi) hi=vj; }
+        }
+        if (lo===Infinity){ pen = false; continue; }
+        var cx = ACG.L+px+0.5;
+        if (!pen || brk) ctx.moveTo(cx, y(hi)); else ctx.lineTo(cx, y(hi));
+        ctx.lineTo(cx, y(lo));
+        pen = true;
+      }
+    } else {
+      for (var m=Math.max(0,i0-1); m<=Math.min(n-1,i1+1); m++){
+        var vm = s[m];
+        if (vm==null){ pen = false; continue; }
+        if (!pen || AC.breakSet[m]) ctx.moveTo(x(m), y(vm)); else ctx.lineTo(x(m), y(vm));
+        pen = true;
+      }
+    }
+    ctx.stroke();
+    if (i1-i0+1 <= plotW/8){
+      ctx.fillStyle = lineC;
+      for (var d=i0; d<=i1; d++){
+        if (s[d]==null) continue;
+        ctx.beginPath(); ctx.arc(x(d), y(s[d]), 2.2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    var hv = AC.hover;
+    if (hv>=i0-1 && hv<=i1+1 && hv>=0){
+      var hx = x(hv);
+      ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(hx,top); ctx.lineTo(hx,bottom); ctx.stroke(); ctx.setLineDash([]);
+      if (s[hv]!=null){
+        ctx.fillStyle = lineC; ctx.strokeStyle = surf; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(hx, y(s[hv]), 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function acClamp(){
+    var last = AC.n-1;
+    var minSpan = Math.min(last, AC_MIN_SPAN);
+    if (AC.b-AC.a < minSpan){ var c = (AC.a+AC.b)/2; AC.a = c-minSpan/2; AC.b = c+minSpan/2; }
+    if (AC.b-AC.a >= last){ AC.a = 0; AC.b = last; return; }
+    if (AC.a<0){ AC.b -= AC.a; AC.a = 0; }
+    if (AC.b>last){ AC.a -= AC.b-last; AC.b = last; }
+  }
+  function acZoom(factor, center){
+    if (center==null) center = (AC.a+AC.b)/2;
+    AC.a = center-(center-AC.a)*factor;
+    AC.b = center+(AC.b-center)*factor;
+    acClamp(); acSchedule();
+  }
+  function acPan(delta){ AC.a += delta; AC.b += delta; acClamp(); acSchedule(); }
+  function acPlotW(canvas){ return canvas.getBoundingClientRect().width-ACG.L-ACG.R; }
+  function acIdxAt(canvas, clientX){
+    var rect = canvas.getBoundingClientRect();
+    var f = Math.max(0, Math.min(1, (clientX-rect.left-ACG.L)/(rect.width-ACG.L-ACG.R)));
+    return AC.a+f*(AC.b-AC.a);
+  }
+  function acSetHover(canvas, clientX){
+    var idx = Math.max(0, Math.min(AC.n-1, Math.round(acIdxAt(canvas, clientX))));
+    if (idx!==AC.hover){ AC.hover = idx; acSchedule(); }
+  }
+  function acAttach(canvas){
+    canvas.addEventListener("wheel", function(ev){
+      if (!AC) return;
+      if (ev.ctrlKey){
+        ev.preventDefault();
+        acZoom(Math.exp(ev.deltaY*0.01), acIdxAt(canvas, ev.clientX));
+      } else if (ev.shiftKey || Math.abs(ev.deltaX)>Math.abs(ev.deltaY)){
+        ev.preventDefault();
+        var d = ev.shiftKey && !ev.deltaX ? ev.deltaY : ev.deltaX;
+        acPan(d/acPlotW(canvas)*(AC.b-AC.a));
+      }
+    }, {passive:false});
+    canvas.addEventListener("pointerdown", function(ev){
+      if (!AC) return;
+      try{ canvas.setPointerCapture(ev.pointerId); }catch(e){}
+      AC.pointers[ev.pointerId] = {x:ev.clientX};
+      var ids = Object.keys(AC.pointers);
+      if (ev.pointerType==="mouse"){
+        if (ev.button!==0) return;
+        var si = acIdxAt(canvas, ev.clientX);
+        AC.drag = {mode:"select", startIdx:si, curIdx:si, startX:ev.clientX, moved:false};
+      } else if (ids.length===1){
+        AC.drag = {mode:"pan", lastX:ev.clientX, startX:ev.clientX, moved:false};
+        acSetHover(canvas, ev.clientX);
+      } else if (ids.length===2){
+        var p0 = AC.pointers[ids[0]].x, p1 = AC.pointers[ids[1]].x;
+        AC.drag = {mode:"pinch", dist:Math.max(10,Math.abs(p0-p1)), a:AC.a, b:AC.b, mid:acIdxAt(canvas,(p0+p1)/2)};
+      }
+    });
+    canvas.addEventListener("pointermove", function(ev){
+      if (!AC) return;
+      if (AC.pointers[ev.pointerId]) AC.pointers[ev.pointerId].x = ev.clientX;
+      var dr = AC.drag;
+      if (!dr){ if (ev.pointerType==="mouse") acSetHover(canvas, ev.clientX); return; }
+      if (dr.mode==="select"){
+        dr.curIdx = acIdxAt(canvas, ev.clientX);
+        if (Math.abs(ev.clientX-dr.startX)>6) dr.moved = true;
+        acSetHover(canvas, ev.clientX);
+        acSchedule();
+      } else if (dr.mode==="pan"){
+        if (Math.abs(ev.clientX-dr.startX)>6) dr.moved = true;
+        if (dr.moved){
+          acPan(-(ev.clientX-dr.lastX)/acPlotW(canvas)*(AC.b-AC.a));
+          acSetHover(canvas, ev.clientX);
+        }
+        dr.lastX = ev.clientX;
+      } else if (dr.mode==="pinch"){
+        var ids = Object.keys(AC.pointers);
+        if (ids.length<2) return;
+        var dist = Math.max(10, Math.abs(AC.pointers[ids[0]].x-AC.pointers[ids[1]].x));
+        var factor = dr.dist/dist;
+        AC.a = dr.mid-(dr.mid-dr.a)*factor;
+        AC.b = dr.mid+(dr.b-dr.mid)*factor;
+        acClamp(); acSchedule();
+      }
+    });
+    function end(ev){
+      if (!AC) return;
+      delete AC.pointers[ev.pointerId];
+      var dr = AC.drag;
+      if (dr && dr.mode==="select"){
+        if (dr.moved && Math.abs(dr.curIdx-dr.startIdx)>=1){
+          AC.a = Math.min(dr.startIdx, dr.curIdx);
+          AC.b = Math.max(dr.startIdx, dr.curIdx);
+          acClamp();
+        }
+        AC.drag = null;
+      } else if (dr && dr.mode==="pinch"){
+        var rest = Object.keys(AC.pointers);
+        AC.drag = rest.length===1 ? {mode:"pan", lastX:AC.pointers[rest[0]].x, startX:AC.pointers[rest[0]].x, moved:true} : null;
+      } else if (!Object.keys(AC.pointers).length){
+        AC.drag = null;
+      }
+      acSchedule();
+    }
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", end);
+    canvas.addEventListener("pointerleave", function(ev){
+      if (AC && ev.pointerType==="mouse" && !AC.drag){ AC.hover = -1; acSchedule(); }
+    });
+    canvas.addEventListener("dblclick", function(){ if (AC){ AC.a = 0; AC.b = AC.n-1; acSchedule(); } });
+  }
+
   /* ---------- wiring ---------- */
   function run(text, label){
     var p = parseCsv(text);
@@ -1538,8 +1945,18 @@
   document.getElementById("chartModal").addEventListener("click", function(ev){
     if (ev.target === ev.currentTarget) closeChart();
   });
-  document.addEventListener("keydown", function(ev){ if (ev.key==="Escape") closeChart(); });
-  window.addEventListener("resize", function(){ if (chartState) drawBigChart(); });
+  document.addEventListener("keydown", function(ev){ if (ev.key==="Escape"){ closeChart(); closeAllCharts(); } });
+  window.addEventListener("resize", function(){ if (chartState) drawBigChart(); if (AC) acSchedule(); });
+  document.getElementById("btnAllCharts").addEventListener("click", openAllCharts);
+  document.getElementById("acClose").addEventListener("click", closeAllCharts);
+  document.getElementById("acModal").addEventListener("click", function(ev){
+    if (ev.target === ev.currentTarget) closeAllCharts();
+  });
+  document.getElementById("acAll").addEventListener("click", function(){ if (AC){ AC.a = 0; AC.b = AC.n-1; acSchedule(); } });
+  document.getElementById("acIn").addEventListener("click", function(){ if (AC) acZoom(0.5, AC.hover>=0 ? AC.hover : null); });
+  document.getElementById("acOut").addEventListener("click", function(){ if (AC) acZoom(2, null); });
+  document.getElementById("acLeft").addEventListener("click", function(){ if (AC) acPan(-(AC.b-AC.a)*0.5); });
+  document.getElementById("acRight").addEventListener("click", function(){ if (AC) acPan((AC.b-AC.a)*0.5); });
   var bigCanvas = document.getElementById("bigChart");
   bigCanvas.addEventListener("pointermove", chartPointer);
   bigCanvas.addEventListener("pointerdown", chartPointer);
