@@ -33,10 +33,10 @@
   <line x1="220" y1="300" x2="290" y2="300" stroke="#5F5E5A" stroke-width="7"/>
   <line x1="221" y1="300" x2="289" y2="300" stroke="#FFFFFF" stroke-width="4"/>
 
-  <text x="645" y="226" font-size="14" font-weight="bold" fill="#2C2C2A" text-anchor="middle">診断カプラー</text>
+  <text x="645" y="226" font-size="14" font-weight="bold" fill="#2C2C2A" text-anchor="middle">①の3ピンカプラー</text>
   <rect x="560" y="235" width="170" height="90" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
-  <text x="578" y="265" font-size="14" fill="#2C2C2A">緑線</text>
-  <text x="578" y="305" font-size="14" fill="#2C2C2A">白線</text>
+  <text x="578" y="265" font-size="14" fill="#2C2C2A">緑 TXD</text>
+  <text x="578" y="305" font-size="14" fill="#2C2C2A">白 RXD</text>
   <line x1="450" y1="260" x2="560" y2="260" stroke="#3B6D11" stroke-width="5"/>
   <line x1="450" y1="300" x2="560" y2="300" stroke="#5F5E5A" stroke-width="7"/>
   <line x1="451" y1="300" x2="559" y2="300" stroke="#FFFFFF" stroke-width="4"/>
@@ -48,9 +48,9 @@
   <line x1="180" y1="372" x2="206" y2="372" stroke="#2C2C2A" stroke-width="4"/>
   <text x="212" y="377" font-size="12" fill="#2C2C2A">GND</text>
   <line x1="262" y1="372" x2="288" y2="372" stroke="#3B6D11" stroke-width="5"/>
-  <text x="294" y="377" font-size="12" fill="#2C2C2A">G21 → 緑線</text>
+  <text x="294" y="377" font-size="12" fill="#2C2C2A">G21 → 緑</text>
   <line x1="390" y1="372" x2="416" y2="372" stroke="#5F5E5A" stroke-width="7"/>
   <line x1="391" y1="372" x2="415" y2="372" stroke="#FFFFFF" stroke-width="4"/>
-  <text x="422" y="377" font-size="12" fill="#2C2C2A">G25 ← 白線</text>
-  <text x="30" y="408" font-size="12" fill="#5F5E5A">点線はモジュールの中でつながっていることを表します。診断カプラーの GND（アース）にはつなぎません。</text>
+  <text x="422" y="377" font-size="12" fill="#2C2C2A">G25 ← 白</text>
+  <text x="30" y="408" font-size="12" fill="#5F5E5A">点線はモジュールの中でつながっていることを表します。①の黒（GND）にはつなぎません。</text>
 </svg>

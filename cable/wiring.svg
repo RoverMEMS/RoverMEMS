@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" font-family="'Hiragino Sans','Yu Gothic','Meiryo','Noto Sans JP',sans-serif">
+  <rect x="0" y="0" width="760" height="420" rx="12" fill="#FFFFFF"/>
+
+  <!-- ① 延長ハーネス -->
+  <text x="20" y="30" font-size="15" font-weight="bold" fill="#2C2C2A">① 延長ハーネス（約1m）</text>
+
+  <text x="110" y="58" font-size="12" fill="#5F5E5A" text-anchor="middle">172201-1 正面</text>
+  <text x="110" y="74" font-size="11" fill="#5F5E5A" text-anchor="middle">（車に差し込む側）</text>
+  <circle cx="110" cy="140" r="55" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="2"/>
+  <rect x="98" y="184" width="24" height="14" fill="#FFFFFF" stroke="#5F5E5A" stroke-width="2"/>
+  <rect x="96" y="193" width="28" height="9" fill="#FFFFFF"/>
+  <circle cx="110" cy="115" r="10" fill="#2C2C2A"/>
+  <circle cx="82" cy="160" r="10" fill="#3B6D11"/>
+  <circle cx="138" cy="160" r="10" fill="#FFFFFF" stroke="#5F5E5A" stroke-width="2"/>
+  <text x="110" y="100" font-size="11" font-weight="bold" fill="#2C2C2A" text-anchor="middle">黒 GND</text>
+  <text x="48" y="157" font-size="11" font-weight="bold" fill="#3B6D11" text-anchor="end">緑</text>
+  <text x="48" y="172" font-size="11" font-weight="bold" fill="#3B6D11" text-anchor="end">TXD</text>
+  <text x="171" y="157" font-size="11" font-weight="bold" fill="#2C2C2A">白</text>
+  <text x="171" y="172" font-size="11" font-weight="bold" fill="#2C2C2A">RXD</text>
+  <text x="110" y="218" font-size="11" fill="#5F5E5A" text-anchor="middle">切り欠き（下）</text>
+
+  <rect x="200" y="95" width="70" height="90" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+  <text x="235" y="88" font-size="12" fill="#2C2C2A" text-anchor="middle">172201-1</text>
+  <line x1="270" y1="115" x2="520" y2="115" stroke="#2C2C2A" stroke-width="4"/>
+  <line x1="270" y1="140" x2="520" y2="140" stroke="#3B6D11" stroke-width="5"/>
+  <line x1="270" y1="165" x2="520" y2="165" stroke="#5F5E5A" stroke-width="7"/>
+  <line x1="271" y1="165" x2="519" y2="165" stroke="#FFFFFF" stroke-width="4"/>
+  <text x="395" y="108" font-size="12" fill="#2C2C2A" text-anchor="middle">黒 GND</text>
+  <text x="395" y="133" font-size="12" fill="#3B6D11" text-anchor="middle">緑 TXD（→ECUへ）</text>
+  <text x="395" y="190" font-size="12" fill="#2C2C2A" text-anchor="middle">白 RXD（←ECUから）</text>
+  <text x="395" y="212" font-size="11" fill="#5F5E5A" text-anchor="middle">約1m（車体に引き込む）</text>
+  <rect x="520" y="95" width="90" height="90" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.5"/>
+  <text x="565" y="88" font-size="12" fill="#04342C" text-anchor="middle">3ピンカプラー（メス）</text>
+  <text x="565" y="145" font-size="12" fill="#04342C" text-anchor="middle">車内側</text>
+  <text x="620" y="145" font-size="11" fill="#5F5E5A">→ ② か</text>
+  <text x="620" y="162" font-size="11" fill="#5F5E5A">Bluetooth</text>
+  <text x="620" y="178" font-size="11" fill="#5F5E5A">モジュールへ</text>
+
+  <line x1="20" y1="240" x2="740" y2="240" stroke="#D3D1C7" stroke-dasharray="5 4"/>
+
+  <!-- ② USBケーブル -->
+  <text x="20" y="270" font-size="15" font-weight="bold" fill="#2C2C2A">② USBケーブル</text>
+  <rect x="20" y="290" width="90" height="90" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.5"/>
+  <text x="65" y="330" font-size="12" fill="#04342C" text-anchor="middle">3ピン</text>
+  <text x="65" y="346" font-size="11" fill="#04342C" text-anchor="middle">カプラー（オス）</text>
+  <text x="65" y="396" font-size="11" fill="#5F5E5A" text-anchor="middle">同じ色どうしをつなぐ</text>
+  <line x1="110" y1="310" x2="330" y2="310" stroke="#2C2C2A" stroke-width="4"/>
+  <line x1="110" y1="335" x2="330" y2="335" stroke="#3B6D11" stroke-width="5"/>
+  <line x1="110" y1="360" x2="330" y2="360" stroke="#5F5E5A" stroke-width="7"/>
+  <line x1="111" y1="360" x2="329" y2="360" stroke="#FFFFFF" stroke-width="4"/>
+  <text x="220" y="303" font-size="12" fill="#2C2C2A" text-anchor="middle">GND</text>
+  <text x="220" y="328" font-size="12" fill="#3B6D11" text-anchor="middle">TXD</text>
+  <text x="220" y="384" font-size="12" fill="#2C2C2A" text-anchor="middle">RXD</text>
+  <rect x="330" y="290" width="150" height="90" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <text x="405" y="322" font-size="13" font-weight="bold" fill="#26215C" text-anchor="middle">USBシリアル</text>
+  <text x="405" y="340" font-size="13" font-weight="bold" fill="#26215C" text-anchor="middle">ケーブル</text>
+  <text x="405" y="358" font-size="11" fill="#26215C" text-anchor="middle">必ず5V用</text>
+  <text x="405" y="400" font-size="11" fill="#A32D2D" text-anchor="middle">電源線（赤）などは使わない・先端を絶縁</text>
+  <line x1="480" y1="335" x2="520" y2="335" stroke="#5F5E5A" stroke-width="3"/>
+  <rect x="520" y="313" width="90" height="44" rx="6" fill="#F1EFE8" stroke="#5F5E5A"/>
+  <text x="565" y="332" font-size="12" fill="#2C2C2A" text-anchor="middle">OTG変換</text>
+  <text x="565" y="348" font-size="11" fill="#2C2C2A" text-anchor="middle">USB-A→C</text>
+  <line x1="610" y1="335" x2="640" y2="335" stroke="#5F5E5A" stroke-width="3"/>
+  <rect x="640" y="313" width="90" height="44" rx="6" fill="#F1EFE8" stroke="#5F5E5A"/>
+  <text x="685" y="340" font-size="13" fill="#2C2C2A" text-anchor="middle">スマホ</text>
+</svg>
