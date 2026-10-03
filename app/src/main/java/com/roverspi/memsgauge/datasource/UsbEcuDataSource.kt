@@ -228,7 +228,9 @@ class UsbEcuDataSource(context: Context) : EcuDataSource {
 
     private companion object {
         const val TAG = "RoverMEMS"
-        const val POLL_INTERVAL_MS = 200L
+        // 間の待ちが長いと針が実車より遅れるので短くする(200→50ms、10-03)。
+        // ゼロにしないのは、エラークリア・部品テストがlinkMutexを取れる隙間を残すため。
+        const val POLL_INTERVAL_MS = 50L
         const val FLUSH_RESYNC_THRESHOLD_MS = 4_000L
         const val FULL_RECONNECT_THRESHOLD_MS = 8_000L
     }

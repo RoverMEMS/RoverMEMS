@@ -41,9 +41,9 @@ private const val NEEDLE_HUB_FRACTION_Y = 0.652f
 private const val NEEDLE_LENGTH_SCALE = 1.12f
 
 // 新しい値が届くたびに針を一気に跳ばすとカクカク見えるので、次の値まで
-// この時間をかけて一定の速さで動かす(iPhoneのウェブ版と同じ0.4秒)。
-// データの更新間隔とほぼ同じにしておくと、針が止まらず動き続けて見える。
-private const val NEEDLE_ANIMATION_MS = 400
+// この時間をかけて一定の速さで動かす。長いほどなめらかだが、その分だけ
+// 実車のメーターより遅れる(0.4秒だと「ワンテンポ遅い」と感じた、10-03)。
+private const val NEEDLE_ANIMATION_MS = 150
 
 /**
  * One anchor point for a non-linear ("expanded") gauge scale: [value] maps
