@@ -17,6 +17,9 @@ package com.roverspi.memsgauge.protocol
  *   conversion, and they're omitted from both reference apps' live-data views.)
  * - longTermFuelTrim: librosco passes the raw byte through; MEMSFCR documents
  *   "raw - 128" (trim centered on zero). Applied here.
+ * - shortTermFuelTrim: MEMSFCR's rosco.go converts it as "raw - 100" (its
+ *   website doesn't say). Confirmed on the real car 2026-10-05: the raw byte
+ *   sits at exactly 100 whenever the ECU is in open loop. Applied here.
  * - idleSwitch: librosco/protocol.c reads this as its own byte at frame
  *   offset 10. The decompiled "MEMS Diag lite" instead derives it from bit 4
  *   (0x10) of the offset-18 byte (the same byte as iacPosition) -- packing a
@@ -74,6 +77,8 @@ data class MemsData(
         private const val TEMP_OFFSET_C = 55
         // Per MEMSFCR: long term fuel trim is centered on this raw value.
         private const val FUEL_TRIM_CENTER = 128
+        // Per MEMSFCR's rosco.go: short term fuel trim is centered on this raw value.
+        private const val SHORT_TERM_TRIM_CENTER = 100
 
         fun fromFrames(frame80: MemsFrame80, frame7d: MemsFrame7d, ecuVersion: EcuVersion): MemsData {
             return MemsData(
@@ -107,7 +112,7 @@ data class MemsData(
                 lambdaSensorStatus = frame7d.lambdaStatus != 0,
                 closedLoop = frame7d.closedLoop != 0,
                 longTermFuelTrim = frame7d.longTermFuelTrim - FUEL_TRIM_CENTER,
-                shortTermFuelTrim = frame7d.shortTermFuelTrim,
+                shortTermFuelTrim = frame7d.shortTermFuelTrim - SHORT_TERM_TRIM_CENTER,
                 carbonCanisterDutyCycle = frame7d.carbonCanisterDutyCycle,
                 ecuVersion = ecuVersion,
                 dtc2 = frame7d.dtc2,

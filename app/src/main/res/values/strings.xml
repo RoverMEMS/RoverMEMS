@@ -84,12 +84,12 @@
     <string name="detail_lambda_voltage">ラムダ電圧</string>
     <string name="detail_iac_position">IACポジション</string>
     <string name="detail_battery_voltage">バッテリー電圧</string>
-    <string name="detail_afr">空燃比</string>
     <string name="detail_lambda_status">ラムダセンサー状態</string>
     <string name="detail_closed_loop">クローズドループ</string>
     <string name="detail_idle_base_pos">アイドルベース位置</string>
     <string name="detail_idle_error">アイドルエラー</string>
     <string name="detail_fuel_trim_long">燃料トリム(長期)</string>
+    <string name="detail_canister_duty">キャニスターパージデューティ比</string>
     <string name="detail_fuel_trim_short">燃料トリム(短期)</string>
     <string name="detail_idle_switch">アイドルスイッチ</string>
     <string name="detail_park_neutral">パーキング/ニュートラルスイッチ</string>
@@ -159,7 +159,6 @@
     <string name="col_battery_voltage">バッテリー電圧(V)</string>
     <string name="col_lambda_voltage">ラムダ電圧(mV)</string>
     <string name="col_throttle_angle">スロットル開度(°)</string>
-    <string name="col_air_fuel_ratio">空燃比</string>
     <string name="col_ignition_advance">点火進角(°)</string>
     <string name="col_coil_time">コイル時間(ms)</string>
     <string name="col_fuel_trim_long">燃料トリム(長期)</string>

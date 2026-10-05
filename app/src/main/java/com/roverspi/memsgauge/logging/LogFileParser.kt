@@ -21,7 +21,7 @@ object LogFileParser {
     private val NUMERIC_COLUMNS = listOf(
         "engineSpeed", "waterTemp", "intakeAirTemp", "throttleVoltage",
         "manifoldPressure", "idleBypassPos", "mainVoltage", "lambdaVoltage_mV",
-        "throttleAngle", "airFuelRatio", "ignitionAdvance", "coilTime",
+        "throttleAngle", "ignitionAdvance", "coilTime",
         "longTermFuelTrim", "shortTermFuelTrim", "idleSpeedDeviation", "idleError", "idleBasePos"
     )
 

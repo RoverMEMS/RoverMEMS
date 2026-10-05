@@ -114,10 +114,10 @@ class MemsFrameParsingTest {
     @Test
     fun memsData_keepsLongAndShortFuelTrimSeparate() {
         // longTermFuelTrim is centered on raw 128 per MEMSFCR (raw 5 -> -123);
-        // shortTermFuelTrim has no documented offset, so it stays raw (200).
+        // shortTermFuelTrim is centered on raw 100 per MEMSFCR's rosco.go (raw 200 -> 100).
         val data = sampleData()
         assertEquals(-123, data.longTermFuelTrim)
-        assertEquals(200, data.shortTermFuelTrim)
+        assertEquals(100, data.shortTermFuelTrim)
     }
 
     @Test
