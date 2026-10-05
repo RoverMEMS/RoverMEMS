@@ -62,7 +62,12 @@ data class MemsData(
     val longTermFuelTrim: Int,
     val shortTermFuelTrim: Int,
     val carbonCanisterDutyCycle: Int,
-    val ecuVersion: EcuVersion
+    val ecuVersion: EcuVersion,
+    // Raw 0x7D fault bytes whose bits no public source decodes -- logged
+    // as-is so the log analyzer can flag any non-zero value without guessing.
+    val dtc2: Int = 0,
+    val dtc3: Int = 0,
+    val dtc4: Int = 0
 ) {
     companion object {
         // Per MEMSFCR's ecu-data-values page: raw byte minus this offset gives Celsius.
@@ -104,7 +109,10 @@ data class MemsData(
                 longTermFuelTrim = frame7d.longTermFuelTrim - FUEL_TRIM_CENTER,
                 shortTermFuelTrim = frame7d.shortTermFuelTrim,
                 carbonCanisterDutyCycle = frame7d.carbonCanisterDutyCycle,
-                ecuVersion = ecuVersion
+                ecuVersion = ecuVersion,
+                dtc2 = frame7d.dtc2,
+                dtc3 = frame7d.dtc3,
+                dtc4 = frame7d.dtc4
             )
         }
     }

@@ -22,8 +22,9 @@ private const val LOG_SUBFOLDER = "RoverMEMS"
  * Writes a CSV log of live ECU data, one row per sample, to the public
  * Downloads/RoverMEMS folder -- visible in a file manager and over USB/MTP
  * from a PC, unlike app-private storage (Android/data/...), which recent
- * Android versions hide from both. Column set and header mirror MEMSGauge's
- * logger.cpp so existing spreadsheet workflows transfer directly.
+ * Android versions hide from both. The first columns mirror MEMSGauge's
+ * logger.cpp so existing spreadsheet workflows transfer directly; every other
+ * MemsData field follows after them.
  *
  * Android 10+ (API 29+) writes through MediaStore's Downloads collection,
  * which needs no storage permission. Android 8-9 (API 26-28, e.g. this
@@ -86,7 +87,32 @@ class DataLogger(private val context: Context) {
                     data.batteryVoltage,
                     data.idleSwitch,
                     data.closedLoop,
-                    data.lambdaVoltageMv
+                    data.lambdaVoltageMv,
+                    // Extended columns (everything else MemsData holds), appended
+                    // after MEMSGauge's ten so tools reading those still work.
+                    data.ambientTempC,
+                    data.fuelTempC,
+                    oneDecimal(data.throttleAngleDeg),
+                    oneDecimal(data.airFuelRatio),
+                    data.parkNeutralSwitch,
+                    data.coolantTempSensorFault,
+                    data.intakeAirTempSensorFault,
+                    data.fuelPumpCircuitFault,
+                    data.throttlePotCircuitFault,
+                    data.idleSpeedDeviation,
+                    data.idleError,
+                    data.idleBasePos,
+                    oneDecimal(data.ignitionAdvanceDeg),
+                    String.format(Locale.US, "%.3f", data.coilTimeMs),
+                    data.lambdaSensorFrequency,
+                    data.lambdaSensorDutyCycle,
+                    data.lambdaSensorStatus,
+                    data.longTermFuelTrim,
+                    data.shortTermFuelTrim,
+                    data.carbonCanisterDutyCycle,
+                    hexByte(data.dtc2),
+                    hexByte(data.dtc3),
+                    hexByte(data.dtc4)
                 ).joinToString(",")
             )
             fileWriter.flush()
@@ -95,6 +121,10 @@ class DataLogger(private val context: Context) {
             // (e.g. transient storage hiccup) -- the next sample will retry.
         }
     }
+
+    private fun oneDecimal(value: Float) = String.format(Locale.US, "%.1f", value)
+
+    private fun hexByte(value: Int) = String.format(Locale.US, "0x%02X", value)
 
     fun stop() {
         try {
@@ -140,9 +170,15 @@ class DataLogger(private val context: Context) {
     }
 
     private companion object {
-        // Matches MEMSGauge's logger.cpp column order exactly.
+        // The first eleven columns match MEMSGauge's logger.cpp order exactly;
+        // the rest use the same names the log analyzer (docs/index.html) reads.
         const val HEADER = "#time,engineSpeed,waterTemp,intakeAirTemp,throttleVoltage," +
-            "manifoldPressure,idleBypassPos,mainVoltage,idleswitch,closedloop,lambdaVoltage_mV"
+            "manifoldPressure,idleBypassPos,mainVoltage,idleswitch,closedloop,lambdaVoltage_mV," +
+            "ambientTemp,fuelTemp,throttleAngle,airFuelRatio,parkNeutralSwitch," +
+            "coolantTempSensorFault,intakeAirTempSensorFault,fuelPumpCircuitFault,throttlePotCircuitFault," +
+            "idleSpeedDeviation,idleError,idleBasePos,ignitionAdvance,coilTime," +
+            "lambdaFrequency,lambdaDutyCycle,lambdaStatus,longTermFuelTrim,shortTermFuelTrim," +
+            "purgeDutyCycle,dtc2,dtc3,dtc4"
         const val MAX_LOG_FILES = 50
     }
 }

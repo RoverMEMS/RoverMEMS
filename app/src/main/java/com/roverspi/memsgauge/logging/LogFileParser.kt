@@ -12,14 +12,17 @@ data class LogSeries(val columnName: String, val values: List<Float>, val timest
  * a saved log can be charted the same way live data is -- now with each
  * sample's actual clock time alongside its value, so [LogChartScreen] can
  * label the X axis with real times instead of a meaningless sample index.
- * Only numeric columns are parsed; idleswitch/closedloop are written as
- * "true"/"false" and skipped here.
+ * Only numeric columns are parsed; true/false flags and the raw dtc bytes
+ * are skipped here, as are sensors this ECU doesn't have fitted. Columns are
+ * looked up by name, so older 10-column logs simply show fewer charts.
  */
 object LogFileParser {
-    // Matches DataLogger's HEADER column order (minus the leading #time).
+    // Charted columns, in display order. Names match DataLogger's HEADER.
     private val NUMERIC_COLUMNS = listOf(
         "engineSpeed", "waterTemp", "intakeAirTemp", "throttleVoltage",
-        "manifoldPressure", "idleBypassPos", "mainVoltage", "lambdaVoltage_mV"
+        "manifoldPressure", "idleBypassPos", "mainVoltage", "lambdaVoltage_mV",
+        "throttleAngle", "airFuelRatio", "ignitionAdvance", "coilTime",
+        "longTermFuelTrim", "shortTermFuelTrim", "idleSpeedDeviation", "idleError", "idleBasePos"
     )
 
     // Matches DataLogger's sampleTimeFormat exactly ("HH:mm:ss.SSS").

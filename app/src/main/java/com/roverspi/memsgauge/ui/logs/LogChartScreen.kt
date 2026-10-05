@@ -41,7 +41,16 @@ private val COLUMN_LABELS: Map<String, Int> = mapOf(
     "manifoldPressure" to R.string.col_manifold_pressure,
     "idleBypassPos" to R.string.col_iac_position,
     "mainVoltage" to R.string.col_battery_voltage,
-    "lambdaVoltage_mV" to R.string.col_lambda_voltage
+    "lambdaVoltage_mV" to R.string.col_lambda_voltage,
+    "throttleAngle" to R.string.col_throttle_angle,
+    "airFuelRatio" to R.string.col_air_fuel_ratio,
+    "ignitionAdvance" to R.string.col_ignition_advance,
+    "coilTime" to R.string.col_coil_time,
+    "longTermFuelTrim" to R.string.col_fuel_trim_long,
+    "shortTermFuelTrim" to R.string.col_fuel_trim_short,
+    "idleSpeedDeviation" to R.string.col_idle_deviation,
+    "idleError" to R.string.col_idle_error,
+    "idleBasePos" to R.string.col_idle_base_pos
 )
 
 /** Replays a saved CSV log as per-column charts -- the "look back at a past log" counterpart to グラフ's live view. */

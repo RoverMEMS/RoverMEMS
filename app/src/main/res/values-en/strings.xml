@@ -161,6 +161,15 @@
     <string name="col_iac_position">IAC Position</string>
     <string name="col_battery_voltage">Battery Voltage (V)</string>
     <string name="col_lambda_voltage">Lambda Voltage (mV)</string>
+    <string name="col_throttle_angle">Throttle Angle (°)</string>
+    <string name="col_air_fuel_ratio">Air/Fuel Ratio</string>
+    <string name="col_ignition_advance">Ignition Advance (°)</string>
+    <string name="col_coil_time">Coil Time (ms)</string>
+    <string name="col_fuel_trim_long">Fuel Trim (Long)</string>
+    <string name="col_fuel_trim_short">Fuel Trim (Short)</string>
+    <string name="col_idle_deviation">Idle Speed Deviation</string>
+    <string name="col_idle_error">Idle Error</string>
+    <string name="col_idle_base_pos">Idle Base Position</string>
 
     <!-- ActuatorTestScreen -->
     <string name="actuator_title">Component Test</string>

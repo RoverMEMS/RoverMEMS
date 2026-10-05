@@ -161,6 +161,15 @@
     <string name="col_iac_position">IACポジション</string>
     <string name="col_battery_voltage">バッテリー電圧(V)</string>
     <string name="col_lambda_voltage">ラムダ電圧(mV)</string>
+    <string name="col_throttle_angle">スロットル開度(°)</string>
+    <string name="col_air_fuel_ratio">空燃比</string>
+    <string name="col_ignition_advance">点火進角(°)</string>
+    <string name="col_coil_time">コイル時間(ms)</string>
+    <string name="col_fuel_trim_long">燃料トリム(長期)</string>
+    <string name="col_fuel_trim_short">燃料トリム(短期)</string>
+    <string name="col_idle_deviation">アイドル回転偏差</string>
+    <string name="col_idle_error">アイドルエラー</string>
+    <string name="col_idle_base_pos">アイドルベース位置</string>
 
     <!-- ActuatorTestScreen -->
     <string name="actuator_title">部品テスト</string>
