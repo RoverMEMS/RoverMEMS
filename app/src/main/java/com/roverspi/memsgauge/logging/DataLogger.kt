@@ -112,7 +112,9 @@ class DataLogger(private val context: Context) {
                     data.carbonCanisterDutyCycle,
                     hexByte(data.dtc2),
                     hexByte(data.dtc3),
-                    hexByte(data.dtc4)
+                    hexByte(data.dtc4),
+                    data.idleHot,
+                    data.idleSpeedOffset
                 ).joinToString(",")
             )
             fileWriter.flush()
@@ -178,7 +180,7 @@ class DataLogger(private val context: Context) {
             "coolantTempSensorFault,intakeAirTempSensorFault,fuelPumpCircuitFault,throttlePotCircuitFault," +
             "idleSpeedDeviation,idleError,idleBasePos,ignitionAdvance,coilTime," +
             "lambdaFrequency,lambdaDutyCycle,lambdaStatus,longTermFuelTrim,shortTermFuelTrim," +
-            "purgeDutyCycle,dtc2,dtc3,dtc4"
+            "purgeDutyCycle,dtc2,dtc3,dtc4,idleHot,idleSpeedOffset"
         const val MAX_LOG_FILES = 50
     }
 }

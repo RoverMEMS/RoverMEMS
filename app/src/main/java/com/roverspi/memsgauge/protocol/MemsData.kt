@@ -70,7 +70,11 @@ data class MemsData(
     // as-is so the log analyzer can flag any non-zero value without guessing.
     val dtc2: Int = 0,
     val dtc3: Int = 0,
-    val dtc4: Int = 0
+    val dtc4: Int = 0,
+    // Raw values MEMSFCR's analysis uses (isHotIdleFaulty / isIACFaulty), logged for the
+    // log analyzer: 0x80 offset 0x10 ("idle hot") and 0x7D offset 0x13 ("idle speed offset").
+    val idleHot: Int = 0,
+    val idleSpeedOffset: Int = 0
 ) {
     companion object {
         // Per MEMSFCR's ecu-data-values page: raw byte minus this offset gives Celsius.
@@ -117,7 +121,9 @@ data class MemsData(
                 ecuVersion = ecuVersion,
                 dtc2 = frame7d.dtc2,
                 dtc3 = frame7d.dtc3,
-                dtc4 = frame7d.dtc4
+                dtc4 = frame7d.dtc4,
+                idleHot = frame80.idleHot,
+                idleSpeedOffset = frame7d.idleSpeedOffset
             )
         }
     }

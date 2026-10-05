@@ -299,8 +299,8 @@
     white-space:nowrap;
     border:1px solid transparent;
   }
-  .badge.tier-A{color:var(--sev-critical); background:var(--sev-critical-soft); border-color:color-mix(in srgb, var(--sev-critical) 40%, transparent);}
-  .badge.tier-B{color:var(--sev-warning); background:var(--sev-warning-soft); border-color:color-mix(in srgb, var(--sev-warning) 40%, transparent);}
+  .badge.tier-A{color:var(--text-muted); background:var(--surface-2); border-color:var(--border);}
+  .badge.tier-B{color:var(--text-muted); background:var(--surface-2); border-color:var(--border);}
   .badge.tier-C{color:var(--text-muted); background:var(--surface-2); border-color:var(--border);}
   .badge.tier-T{color:var(--tier-t); background:var(--tier-t-soft); border-color:color-mix(in srgb, var(--tier-t) 40%, transparent);}
   .finding-component{font-size:12px; color:var(--text-muted);}
@@ -438,7 +438,7 @@
     <input type="file" id="fileInput" accept=".csv,text/csv">
     <button type="button" class="btn" id="btnAllCharts">全項目のグラフを見る(全時間帯)</button>
     <span class="file-name" id="fileName">サンプルデータ表示中</span>
-    <div class="hint" id="controlsHint">RoverMEMSアプリの走行ログCSV(旧10列 / 新34列どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。</div>
+    <div class="hint" id="controlsHint">RoverMEMSアプリの走行ログCSV(旧10列 / 全項目の新しい形式どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。</div>
   </section>
 
   <section id="statsSection">
@@ -474,11 +474,7 @@
   </details>
 
   <footer id="footerContent">
-    <strong>これは目安です。実車の点検・整備士の判断に代わるものではありません。</strong><br>
-    判定ロジックは MemsFCR(memsfcr.co.uk / GitHub: andrewdjackson/rosco)が実装・公開しているしきい値・技術記事に加え、旧世代ECU一般に共通する診断知見(Bosch Motronic系の「代替値(リンプホーム)」の仕組み、OBD-II診断で言う「妥当性(rationality)チェック」の考え方、ステッパー式アイドルバルブの位置の見方など、Mini/MEMSに限らず同世代の他メーカー車種でも共通して言われている内容)を組み合わせています。
-    Tier A = MemsFCR本体が実際に使用しているロジック、Tier B = 解説記事・他メーカーを含む一般的な整備知見、Tier C = 出典間で差があり実車確認が必要なもの、Tier T = 今回新たに考案した「1走行内の悪化傾向」検知(実験的)。<br>
-    補足: この車のECUは、吸気管の中の圧力を直接測ってその場で燃料の量を決める方式です。そのため、どこかから空気が漏れて入ってきても、圧力センサーがその分をそのまま読み取ってしまい、燃料の量の辻褄はほぼ合ってしまいます。つまり<strong>燃調トリムの数字だけでは空気漏れ(バキュームリーク)に気づきにくい</strong>、ということです。その代わり、余分な空気が入るとアイドル回転数が上がろうとするため、ECUがアイドルステッパー(アイドル時の空気の通り道を開閉する小さなモーター)を普段より多めに閉じて帳尻を合わせます。<strong>この車で空気漏れを疑うときは、燃調トリムではなく「アイドルステッパー位置が低すぎる」という所見を見てください。</strong><br>
-    故障コード(DTC)は、実際に意味が確認できている4ビットのみ具体的な診断にし、それ以外は生の値のみ表示しています。
+    <strong>これは目安です。実車の点検・整備士の判断に代わるものではありません。</strong><br>判定の基準は、MemsFCR(memsfcr.co.uk / GitHub: andrewdjackson/rosco)のプログラムと解説ページ、整備書(Haynes)の数字を元にしています。所見ごとの「根拠」は、その基準の数字の出どころです(重要度とは別)。MemsFCRの判定 = MemsFCRのプログラムと同じ基準、資料 = MemsFCRの解説ページや整備書の数字、このツール独自 = 資料に数字が無くこのツールで決めた基準、独自・実験的 = 走行中の変化を見る試験的な仕組み。資料と実車のログが食い違う場合(例: パージは実車で動いていた)は、実車のログを優先しています。<br>故障コード(DTC)は、意味が確認できている4ビットだけを判定に使い、それ以外は生の値の表示だけにしています。
   </footer>
 </div>
 
@@ -558,25 +554,17 @@
     btnSample:{ja:"サンプルログを生成して試す",en:"Generate a sample log to try"},
     fileLabel:{ja:"CSVログを読み込む",en:"Load a CSV log"},
     btnAllCharts:{ja:"全項目のグラフを見る(全時間帯)",en:"Chart every channel (whole log)"},
-    controlsHint:{ja:"RoverMEMSアプリの走行ログCSV(旧10列 / 新34列どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。",
-      en:"You can load a RoverMEMS app driving log CSV (either the old 10-column or new 34-column format). If some columns are missing, only the checks for those columns are skipped automatically. \"Generate a sample log\" builds fictional data with a random set of injected issues each time (not your real data)."},
+    controlsHint:{ja:"RoverMEMSアプリの走行ログCSV(旧10列 / 全項目の新しい形式どちらも可)を読み込めます。列が足りない場合はその項目の判定だけ自動的にスキップされます。「サンプルログを生成」は毎回ランダムな異常パターンを仕込んだ架空データを作ります(実データではありません)。",
+      en:"You can load a RoverMEMS app driving log CSV (either the old 10-column or the newer all-channel format). If some columns are missing, only the checks for those columns are skipped automatically. \"Generate a sample log\" builds fictional data with a random set of injected issues each time (not your real data)."},
     stTitleSummary:{ja:"検出結果サマリー",en:"Summary of findings"},
     stTitleCritical:{ja:"明確な異常",en:"Clear issues"},
     stTitleWarning:{ja:"要注意",en:"Caution"},
-    stTitleTrend:{ja:"徐々な悪化傾向(実験的・Tier T)",en:"Worsening trend (experimental, Tier T)"},
+    stTitleTrend:{ja:"徐々な悪化傾向(実験的)",en:"Worsening trend (experimental)"},
     stTitleInfo:{ja:"参考情報",en:"Reference"},
     rawSummary:{ja:"読み込んだ全チャンネルの生データ一覧を見る",en:"View raw data for every channel that was loaded"},
     footerContent:{
-      ja:'<strong>これは目安です。実車の点検・整備士の判断に代わるものではありません。</strong><br>'+
-        '判定ロジックは MemsFCR(memsfcr.co.uk / GitHub: andrewdjackson/rosco)が実装・公開しているしきい値・技術記事に加え、旧世代ECU一般に共通する診断知見(Bosch Motronic系の「代替値(リンプホーム)」の仕組み、OBD-II診断で言う「妥当性(rationality)チェック」の考え方、ステッパー式アイドルバルブの位置の見方など、Mini/MEMSに限らず同世代の他メーカー車種でも共通して言われている内容)を組み合わせています。'+
-        'Tier A = MemsFCR本体が実際に使用しているロジック、Tier B = 解説記事・他メーカーを含む一般的な整備知見、Tier C = 出典間で差があり実車確認が必要なもの、Tier T = 今回新たに考案した「1走行内の悪化傾向」検知(実験的)。<br>'+
-        '補足: この車のECUは、吸気管の中の圧力を直接測ってその場で燃料の量を決める方式です。そのため、どこかから空気が漏れて入ってきても、圧力センサーがその分をそのまま読み取ってしまい、燃料の量の辻褄はほぼ合ってしまいます。つまり<strong>燃調トリムの数字だけでは空気漏れ(バキュームリーク)に気づきにくい</strong>、ということです。その代わり、余分な空気が入るとアイドル回転数が上がろうとするため、ECUがアイドルステッパー(アイドル時の空気の通り道を開閉する小さなモーター)を普段より多めに閉じて帳尻を合わせます。<strong>この車で空気漏れを疑うときは、燃調トリムではなく「アイドルステッパー位置が低すぎる」という所見を見てください。</strong><br>'+
-        '故障コード(DTC)は、実際に意味が確認できている4ビットのみ具体的な診断にし、それ以外は生の値のみ表示しています。',
-      en:'<strong>This is a rough guide only. It does not replace inspecting the real car or a mechanic\'s judgment.</strong><br>'+
-        'The diagnostic logic combines thresholds and technical articles that MemsFCR (memsfcr.co.uk / GitHub: andrewdjackson/rosco) has implemented and published, with general diagnostic knowledge shared across older ECUs regardless of make (Bosch Motronic-style "limp-home" substitute-value behaviour, the OBD-II "rationality check" concept, how to read a stepper idle valve\'s position, and similar ideas not limited to Mini/MEMS). '+
-        'Tier A = logic MemsFCR itself actually uses. Tier B = general repair knowledge from articles/other manufacturers. Tier C = sources disagree, needs confirming against the real car. Tier T = an experimental "worsening trend within one drive" detector devised for this tool.<br>'+
-        'Note: this car\'s ECU measures intake manifold pressure directly and calculates fuel from that in real time. So if air leaks in from somewhere, the pressure sensor just reads the resulting pressure and the fuel math still roughly works out. In other words, <strong>fuel trim numbers alone don\'t easily reveal a vacuum leak on this car</strong>. What a leak does instead is push idle speed up, so the ECU closes the idle stepper (the small motor that opens/closes idle air flow) further than usual to compensate. <strong>If you suspect a vacuum leak on this car, check the "idle stepper position too low" finding rather than fuel trim.</strong><br>'+
-        'For fault codes (DTCs), this tool gives a specific diagnosis only for the 4 bits with a confirmed meaning; everything else is shown only as a raw value.'}
+      ja:'<strong>これは目安です。実車の点検・整備士の判断に代わるものではありません。</strong><br>判定の基準は、MemsFCR(memsfcr.co.uk / GitHub: andrewdjackson/rosco)のプログラムと解説ページ、整備書(Haynes)の数字を元にしています。所見ごとの「根拠」は、その基準の数字の出どころです(重要度とは別)。MemsFCRの判定 = MemsFCRのプログラムと同じ基準、資料 = MemsFCRの解説ページや整備書の数字、このツール独自 = 資料に数字が無くこのツールで決めた基準、独自・実験的 = 走行中の変化を見る試験的な仕組み。資料と実車のログが食い違う場合(例: パージは実車で動いていた)は、実車のログを優先しています。<br>故障コード(DTC)は、意味が確認できている4ビットだけを判定に使い、それ以外は生の値の表示だけにしています。',
+      en:'<strong>This is a rough guide only. It does not replace inspecting the real car or a mechanic\'s judgment.</strong><br>The thresholds come from MemsFCR\'s program and write-ups (memsfcr.co.uk / GitHub: andrewdjackson/rosco) and figures in the Haynes manual. Each finding\'s "Basis" says where its numbers come from (separate from how serious it is): MemsFCR\'s own check = the same threshold as MemsFCR\'s program; published docs = figures from MemsFCR\'s write-ups or Haynes; this tool\'s own judgment = no published figure, so this tool set one; own, experimental = a trial check for changes during the drive. Where the docs and real logs disagree (e.g. the purge valve did move on the real car), the real log wins.<br>For fault codes (DTCs), only the 4 bits with a confirmed meaning are used for checks; everything else is shown only as a raw value.'}
   };
   function applyStaticI18n(){
     Object.keys(STATIC_TEXT).forEach(function(id){
@@ -588,7 +576,7 @@
     if (toggle) toggle.textContent = LANG==="ja" ? "English" : "日本語";
   }
 
-  /* ---------- 34-column detailed-log layout (Phase 1 target format) ---------- */
+  /* ---------- all-channel detailed-log layout (matches DataLogger.kt) ---------- */
   var COLUMN_LABELS = {
     time:{ja:"経過時間",en:"Elapsed time"}, engineSpeed:{ja:"エンジン回転数(rpm)",en:"Engine speed (rpm)"},
     waterTemp:{ja:"冷却水温(°C)",en:"Coolant temp (°C)"},
@@ -597,18 +585,27 @@
     mainVoltage:{ja:"バッテリー電圧(V)",en:"Battery voltage (V)"}, idleswitch:{ja:"アイドルスイッチ",en:"Idle switch"}, closedloop:{ja:"クローズドループ",en:"Closed loop"},
     lambdaVoltage_mV:{ja:"O2センサー電圧(mV)",en:"O2 sensor voltage (mV)"}, ambientTemp:{ja:"外気温(°C)※未搭載車あり",en:"Ambient temp (°C) *not fitted on some cars"},
     fuelTemp:{ja:"燃料温度(°C)※未搭載車あり",en:"Fuel temp (°C) *not fitted on some cars"}, throttleAngle:{ja:"スロットル開度(°)",en:"Throttle angle (°)"},
-    airFuelRatio:{ja:"空燃比",en:"Air/fuel ratio"}, parkNeutralSwitch:{ja:"P/Nスイッチ",en:"Park/Neutral switch"},
+    airFuelRatio:{ja:"空燃比※この車では固定値",en:"Air/fuel ratio *fixed value on this car"}, parkNeutralSwitch:{ja:"P/Nスイッチ",en:"Park/Neutral switch"},
     coolantTempSensorFault:{ja:"水温センサー故障フラグ",en:"Coolant sensor fault flag"}, intakeAirTempSensorFault:{ja:"吸気温センサー故障フラグ",en:"Intake temp sensor fault flag"},
     fuelPumpCircuitFault:{ja:"燃料ポンプ回路故障フラグ",en:"Fuel pump circuit fault flag"}, throttlePotCircuitFault:{ja:"スロットルポテンショ回路故障フラグ",en:"Throttle pot circuit fault flag"},
-    idleSpeedDeviation:{ja:"アイドル回転偏差",en:"Idle speed deviation"}, idleError:{ja:"アイドル誤差(rpm)",en:"Idle error (rpm)"}, idleBasePos:{ja:"アイドル基準位置",en:"Idle base position"},
+    idleSpeedDeviation:{ja:"アイドル回転偏差",en:"Idle speed deviation"}, idleError:{ja:"アイドルエラー(意味未確定の値)",en:"Idle error (meaning unconfirmed)"}, idleBasePos:{ja:"アイドル基準位置",en:"Idle base position"},
     ignitionAdvance:{ja:"点火時期進角(°)",en:"Ignition advance (°)"}, coilTime:{ja:"コイル通電時間(ms)",en:"Coil charge time (ms)"},
     lambdaFrequency:{ja:"O2センサー周波数※未使用",en:"O2 sensor frequency *unused"}, lambdaDutyCycle:{ja:"O2センサーデューティ比※未使用",en:"O2 sensor duty cycle *unused"},
     lambdaStatus:{ja:"O2センサー状態",en:"O2 sensor status"}, longTermFuelTrim:{ja:"長期燃調トリム(%)",en:"Long-term fuel trim (%)"}, shortTermFuelTrim:{ja:"短期燃調トリム(%)",en:"Short-term fuel trim (%)"},
-    purgeDutyCycle:{ja:"キャニスターパージ デューティ比※未使用",en:"Canister purge duty cycle *unused"},
+    purgeDutyCycle:{ja:"キャニスターパージ デューティ比",en:"Canister purge duty cycle"},
+    idleHot:{ja:"アイドルHot(暖機後のステッパー目標)",en:"Idle hot (warm stepper target)"}, idleSpeedOffset:{ja:"アイドル回転オフセット",en:"Idle speed offset"},
     dtc2:{ja:"故障コード バイト2(未解読)",en:"Fault code byte 2 (undecoded)"}, dtc3:{ja:"故障コード バイト3(未解読)",en:"Fault code byte 3 (undecoded)"}, dtc4:{ja:"故障コード バイト4(未解読)",en:"Fault code byte 4 (undecoded)"}
   };
+  // 「根拠」バッジ: 重要度(危険/要注意)とは別に、その基準の数字がどこから来たかを示す
+  var TIER_LABELS = {
+    A:{ja:"根拠: MemsFCRの判定",en:"Basis: MemsFCR's own check"},
+    B:{ja:"根拠: 資料(MemsFCR解説・整備書)",en:"Basis: published docs (MemsFCR, Haynes)"},
+    C:{ja:"根拠: このツール独自",en:"Basis: this tool's own judgment"},
+    T:{ja:"独自・実験的",en:"Own, experimental"}
+  };
+  function tierLabel(t){ var e=TIER_LABELS[t]; return e ? (LANG==="ja"?e.ja:e.en) : t; }
   function colLabel(name){ var e=COLUMN_LABELS[name]; return e ? (LANG==="ja"?e.ja:e.en) : name; }
-  var UNUSED_COLS = {ambientTemp:1, fuelTemp:1, lambdaFrequency:1, lambdaDutyCycle:1, purgeDutyCycle:1};
+  var UNUSED_COLS = {ambientTemp:1, fuelTemp:1, lambdaFrequency:1, lambdaDutyCycle:1, airFuelRatio:1};
   var BOOL_COLS = {idleswitch:1, closedloop:1, parkNeutralSwitch:1, coolantTempSensorFault:1,
     intakeAirTempSensorFault:1, fuelPumpCircuitFault:1, throttlePotCircuitFault:1, lambdaStatus:1};
 
@@ -632,8 +629,8 @@
       body:{ja:"IACポジション(実際のステッパーの位置)の「基準」となる位置です。水温によって変わり、冷えているときは高め(多めに開ける前提)、温まったら低めになります。実際のIACポジションとこの基準値が大きくズレ続けている場合、アイドル制御がうまくいっていないサインです。",
         en:"The \"reference\" position that the actual IAC position is measured against. It shifts with coolant temperature — higher (more open) when cold, lower once warm. If the actual IAC position keeps drifting far from this reference, idle control isn't working well."}},
     {keys:["idleError"], title:{ja:"アイドルエラーってなに?",en:"What is idle error?"},
-      body:{ja:"ECUが「このくらいの回転数にしたい」と狙っている目標値と、実際の回転数との差です。0に近いほどアイドルが安定して目標通りに保てていることになります。大きい状態が続くと、ECUがアイドルをうまくコントロールできていないサインです。似た名前の「アイドル回転偏差」は、この誤差が生まれる元になっている、より短いスパンでの回転のブレを指します。",
-        en:"The gap between the RPM the ECU is aiming for and the actual RPM. Close to 0 means idle is being held steadily on target. A large gap that persists means the ECU isn't managing idle well. The similarly-named \"idle speed deviation\" is the shorter-timescale RPM wobble that feeds into this error."}},
+      body:{ja:"0x7Dデータの20番目のバイトです。MemsFCRのサイトでは「idle error」と書かれていますが、MemsFCRのプログラムでは「不明なバイト」扱いで、換算式も示されていません。作者の実車(1996年式SPi)では127〜135付近で動いていました。意味が確定していないので、このツールでは判定に使っていません。",
+        en:"Byte 20 of the 0x7D data. MemsFCR's website calls it \"idle error\", but MemsFCR's own code treats it as an unknown byte with no conversion. On the author's car (1996 SPi) it moved around 127-135. Since its meaning isn't settled, this tool doesn't use it for any check."}},
     {keys:["idleSpeedDeviation"], title:{ja:"アイドル回転偏差ってなに?",en:"What is idle speed deviation?"},
       body:{ja:"アイドル中の回転数の細かいブレ(目標に対する瞬間的なズレ)です。「アイドルエラー」と近い概念ですが、こちらはより短いスパンでの動きを表しています。数値が大きく動き続ける場合、点火や燃調、あるいはIACバルブの反応の遅れなどが影響している可能性があります。",
         en:"The fine, moment-to-moment wobble in idle RPM around the target. Related to \"idle error\" but on a shorter timescale. If it keeps moving a lot, ignition, fuelling, or a slow-responding IAC valve could be contributing."}},
@@ -671,14 +668,14 @@
       body:{ja:"O2センサーがECUから見て「有効(使える状態)」か「無効」かを表す項目です。",
         en:"Whether the ECU currently considers the O2 sensor \"enabled\" (usable) or \"disabled\"."}},
     {keys:["purgeDutyCycle"], title:{ja:"キャニスターパージデューティ比ってなに?",en:"What is canister purge duty cycle?"},
-      body:{ja:"給油口の近くなどにある「キャニスター」という部品にたまった燃料の蒸気を、エンジンが十分温まって回転数もある程度上がっている時だけ、少しずつ吸気側に戻す(パージする)ためのバルブの開き具合です。冷間時やアイドル中は基本的に動きません。この車のECUではこの項目自体は実際には使われていないとの報告があり、このツールでは判定対象から外しています。",
-        en:"How far open the valve is that lets fuel vapour, collected in a \"canister\" near the fuel filler, bleed back into the intake — but only once the engine is fully warm and turning at a reasonable RPM. It's essentially inactive while cold or idling. Reports suggest this field isn't actually used on this ECU, so this tool excludes it from judgment."}},
+      body:{ja:"給油口の近くなどにある「キャニスター」という部品にたまった燃料の蒸気を、少しずつ吸気側に戻す(パージする)ためのバルブの開き具合です。MemsFCRのサイトでは「このECUでは使われず0のまま」とされていますが、作者の実車(1996年式SPi)では0〜80で動いていることを確認しました(2026年10月)。正常範囲の資料が無いので、判定には使っていません。",
+        en:"How far open the valve is that bleeds fuel vapour, collected in a \"canister\" near the filler, back into the intake. MemsFCR's website says this ECU doesn't use it and it reads 0, but on the author's car (1996 SPi) it was seen moving 0-80 (October 2026). With no published normal range, this tool doesn't judge it."}},
     {keys:["idleswitch"], title:{ja:"アイドルスイッチってなに?",en:"What is the idle switch?"},
       body:{ja:"アクセルペダルから完全に足を離している(スロットルが全閉になっている)かどうかを表すON/OFFのスイッチです。",
         en:"An on/off switch indicating whether the accelerator pedal is fully released (throttle fully closed)."}},
     {keys:["parkNeutralSwitch"], title:{ja:"パーキング/ニュートラルスイッチってなに?",en:"What is the Park/Neutral switch?"},
-      body:{ja:"AT(オートマ)車で、シフトがパーキングまたはニュートラルの位置に入っているかを表すスイッチです。MT(マニュアル)車ではこの項目は基本的に使われません。",
-        en:"On automatic-transmission cars, this shows whether the shifter is in Park or Neutral. On a manual-transmission car like this Mini, it's essentially unused."}},
+      body:{ja:"AT(オートマ)車で、シフトがパーキングまたはニュートラルに入っているかを表すスイッチです(MemsFCR)。作者の実車(AT)では走行中もONのままだったので、実際の意味はまだ確認中です。判定には使っていません。",
+        en:"On automatic cars, whether the shifter is in Park or Neutral (per MemsFCR). On the author's automatic it stayed ON even while driving, so its real meaning is still being checked. Not used for any check."}},
     {keys:["coolantTempSensorFault","intakeAirTempSensorFault","fuelPumpCircuitFault","throttlePotCircuitFault","dtc2","dtc3","dtc4"],
       title:{ja:"故障コード(DTC)ってなに?",en:"What are fault codes (DTCs)?"},
       body:{ja:"ECUが自分で「ここがおかしい」と検出した時に立てるフラグです。この車のECUは実は複数のバイト(データのかたまり)で故障を管理していますが、意味がはっきり分かっているのはごく一部だけで、残りは「何か検出しているが内容は不明」としか言えません。このツールでは、意味がはっきりしている項目だけ具体的に説明し、それ以外は正直に「不明」として表示しています。",
@@ -686,9 +683,9 @@
     {keys:[], title:{ja:"ECU種別(MEMS 1.3 / 1.6)の表示ってなに?",en:"What does the ECU type badge (MEMS 1.3 / 1.6) mean?"},
       body:{ja:"アプリ画面上部のバッジに表示される、接続しているECUの種類です。MEMS 1.3とMEMS 1.6は兄弟のようなECUですが、細かい仕様が違うため、アプリが通信内容から自動的に判別しています。",
         en:"The badge at the top of the app screen showing which ECU family it's talking to. MEMS 1.3 and 1.6 are sibling ECUs with some differences under the hood, so the app auto-detects which one it's connected to from the communication itself."}},
-    {keys:[], title:{ja:"信頼度(Tier A/B/C/T)ってなに?",en:"What does confidence tier (A/B/C/T) mean?"},
-      body:{ja:"この所見がどれくらい確かな情報にもとづいているかを表しています。Tier A = 実際に動いている専門の診断ツール(MemsFCR)が使っている基準そのもの。Tier B = 解説記事や他メーカーの事例など、一般的だが車種固有ではない参考情報。Tier C = 情報源によって数字が違うなど実車での確認が必要なもの。Tier T = このツールで新しく考えた「走行中の変化」を見る実験的な仕組み。上から順に信頼度が高いと考えてください。",
-        en:"How solid the basis for a given finding is. Tier A = the exact threshold/logic a real, working diagnostic tool (MemsFCR) uses. Tier B = general reference knowledge from write-ups or other manufacturers' experience, not car-specific. Tier C = sources disagree or it needs confirming against the real car. Tier T = an experimental \"change during one drive\" detector this tool invented itself. Read it as highest confidence at the top, decreasing downward."}},
+    {keys:[], title:{ja:"「根拠」の表示ってなに?",en:"What does the \"Basis\" label mean?"},
+      body:{ja:"所見ごとに、その判定に使った基準の数字がどこから来たかを示しています。「危険」「要注意」といった重要度とは別のものです。MemsFCRの判定 = 実際に動いている診断ツールMemsFCRのプログラムと同じ基準。資料 = MemsFCRの解説ページや整備書(Haynes)に書かれている数字。このツール独自 = 資料に数字が無く、このツールで決めた基準。独自・実験的 = 走行中の変化を見る、このツールで考えた試験的な仕組み。",
+        en:"Each finding shows where the numbers behind it come from. This is separate from how serious it is (critical/warning). MemsFCR's own check = the same threshold as the working MemsFCR diagnostic program. Published docs = numbers stated in MemsFCR's write-ups or the Haynes manual. This tool's own judgment = no published number exists, so this tool set one. Own, experimental = a trial \"change during the drive\" check this tool came up with."}},
     {keys:[], title:{ja:"「なりすまし正常値」ってなに?",en:"What is a \"disguised normal value\"?"},
       body:{ja:"センサーが壊れて信号が来なくなると、ECUは「動けなくなる」代わりに、あらかじめ決められた無難な数字(代替値)をこっそり使って動き続けることがあります。多くのメーカーのECUに共通する仕組みです。厄介なのは、この代替値が一見「正常範囲内」に見えてしまうこと。このツールでは、値がずっと動かずに固定されていること自体を手がかりに、こうした隠れた故障を見つけようとしています。",
         en:"When a sensor fails and stops sending a real signal, rather than giving up, the ECU often quietly substitutes a pre-programmed, plausible-looking fallback number and keeps running. This is a common pattern across many manufacturers' ECUs. The tricky part: that fallback number often sits right inside the \"normal\" range. This tool tries to catch this hidden failure mode by looking for a value that simply never moves, regardless of whether it looks normal."}}
@@ -720,11 +717,10 @@
     {key:"o2stuck", label:{ja:"O2センサー電圧が固着(未接続の代替値付近)",en:"O2 sensor voltage stuck (near disconnected fallback)"}, weight:0.4},
     {key:"trimDrift", label:{ja:"燃調トリムが走行中にじわじわ悪化",en:"Fuel trim gradually worsens during the drive"}, weight:0.4},
     {key:"throttleFlicker", label:{ja:"スロットルポテンショ回路故障が一瞬だけ発生",en:"Throttle pot circuit fault flickers briefly"}, weight:0.3},
-    {key:"unknownDtc", label:{ja:"未解読の故障コードバイトが立つ",en:"An undecoded fault code byte is set"}, weight:0.3},
     {key:"batteryLow", label:{ja:"走行中にバッテリー電圧が13V未満まで低下",en:"Battery voltage drops below 13V while driving"}, weight:0.3},
-    {key:"vacuumLeak", label:{ja:"アイドル時のMAP上昇+ステッパー位置低下(バキュームリーク)",en:"Idle MAP rises + stepper position drops (vacuum leak)"}, weight:0.3},
+    {key:"vacuumLeak", label:{ja:"アイドル時のMAP上昇(バキュームリーク)",en:"Idle MAP rises (vacuum leak)"}, weight:0.3},
     {key:"coolantFault", label:{ja:"水温が59〜60°C固定(センサー断線)",en:"Coolant temp stuck at 59-60°C (sensor open circuit)"}, weight:0.25},
-    {key:"overheat", label:{ja:"水温が100°Cを超えて上昇(オーバーヒート)",en:"Coolant temp climbs past 100°C (overheating)"}, weight:0.2}
+    {key:"overheat", label:{ja:"水温が115°C以上に上昇(オーバーヒート)",en:"Coolant temp climbs to 115°C or more (overheating)"}, weight:0.2}
   ];
   function rollScenarios(rnd){
     var picked = {};
@@ -746,7 +742,7 @@
       "throttleAngle","airFuelRatio","parkNeutralSwitch","coolantTempSensorFault","intakeAirTempSensorFault",
       "fuelPumpCircuitFault","throttlePotCircuitFault","idleSpeedDeviation","idleError","idleBasePos",
       "ignitionAdvance","coilTime","lambdaFrequency","lambdaDutyCycle","lambdaStatus","longTermFuelTrim",
-      "shortTermFuelTrim","purgeDutyCycle","dtc2","dtc3","dtc4"];
+      "shortTermFuelTrim","purgeDutyCycle","dtc2","dtc3","dtc4","idleHot","idleSpeedOffset"];
 
     var glitchStart = 148 + Math.floor(rnd()*6);
     var trimPeak = 16 + rnd()*10; // vary how bad the drift gets, run to run
@@ -769,9 +765,9 @@
       var iat = Math.min(27, 17 + t*0.03) + noise(0.3);
       var map_ = idle ? (30 + noise(3)) : (t<5 ? 95 : (38 + Math.max(0,Math.sin((t-150)/14))*20 + noise(3)));
       var iac = idle ? Math.round(28 + noise(3)) : Math.round(15 + noise(4));
-      var batt = t<5 ? (10.5+noise(0.3)) : (14.1 + noise(0.15));
+      var batt = t<1 ? (10.5+noise(0.3)) : (14.1 + noise(0.15)); // cranking dip only before the engine catches
       var tvolt = idle ? (0.45+noise(0.05)) : (1.6 + Math.max(0,Math.sin((t-150)/14))*1.6 + noise(0.1));
-      var tAngle = idle ? (2+noise(0.5)) : (14 + Math.max(0,Math.sin((t-150)/14))*22 + noise(1));
+      var tAngle = idle ? (8+noise(0.5)) : (20 + Math.max(0,Math.sin((t-150)/14))*22 + noise(1));
       var idleSw = idle ? "true":"false";
       var closedLoop = t>=60 ? "true":"false";
       var lambda = sc.o2stuck ? Math.round(435+noise(3)) : Math.round(450 + Math.sin(t*1.3)*430 + noise(20));
@@ -782,13 +778,13 @@
       var ignAdv = idle ? (9+noise(2)) : (18+Math.max(0,Math.sin((t-150)/14))*6+noise(2));
       var coilT = 2.3 + noise(0.15);
       var throttleFault = (sc.throttleFlicker && t>=glitchStart && t<glitchStart+5) ? "true":"false";
-      var dtc3 = sc.unknownDtc ? "0x02" : "0x00";
+      var dtc3 = "0x00";
       var coolantFault = "false";
 
       if (sc.batteryLow && t>=170 && t<210){ batt = 12.3 + noise(0.25); }
       if (sc.vacuumLeak && idle){ map_ = 50 + noise(3); iac = Math.round(5 + noise(2)); }
       if (sc.coolantFault){ water = 59.5 + noise(0.4); coolantFault = t>=90 ? "true":"false"; }
-      if (sc.overheat && t>=180){ water = Math.min(112, 89 + (t-180)*0.35) + noise(0.5); }
+      if (sc.overheat && t>=150){ water = Math.min(117, 89 + (t-150)*0.4) + noise(0.5); }
 
       rows.push([
         fmtTime(t), rpm, water.toFixed(1), iat.toFixed(1), tvolt.toFixed(2), map_.toFixed(1),
@@ -796,7 +792,8 @@
         tAngle.toFixed(1), afr.toFixed(2), "false", coolantFault, "false",
         "false", throttleFault, idleErr, idleErr, idle?Math.round(30+noise(4)):Math.round(60+noise(6)),
         ignAdv.toFixed(1), coilT.toFixed(2), 255, 255, closedLoop,
-        ltft.toFixed(1), stft.toFixed(1), 0, "0x00", dtc3, "0x00"
+        ltft.toFixed(1), stft.toFixed(1), 0, "0x00", dtc3, "0x00",
+        Math.round(30+noise(3)), Math.round(Math.abs(noise(10)))
       ].join(","));
     }
     var scenarioKeys = SCENARIOS.filter(function(s){return sc[s.key];}).map(function(s){return s.key;});
@@ -857,8 +854,14 @@
     var coilT = numCol(p,"coilTime");
 
     var running = rpm ? rpm.map(function(v){return v!=null && v>300;}) : null;
-    var idle = rpm && tvolt ? rpm.map(function(v,i){return v!=null && v>500 && v<1400 && tvolt[i]!=null && tvolt[i]<1.0;}) : null;
-    var warm = water ? water.map(function(v){return v!=null && v>=80;}) : null;
+    // アイドル・暖機の判定はMemsFCRと同じ(エンジンが回っていてスロットル開度14°以下、水温78°C以上)。
+    // スロットル開度の列が無い古い10列ログだけ、回転数とスロットル電圧で代用する。
+    var tAngle = numCol(p,"throttleAngle");
+    var idle = rpm && tAngle ? rpm.map(function(v,i){return v!=null && v>0 && tAngle[i]!=null && tAngle[i]<=14;})
+             : rpm && tvolt ? rpm.map(function(v,i){return v!=null && v>500 && v<1400 && tvolt[i]!=null && tvolt[i]<1.0;}) : null;
+    var warm = water ? water.map(function(v){return v!=null && v>=78;}) : null;
+    // 1秒以上の記録の途切れ(30秒超)は、連続した区間として扱わない
+    function contiguous(i){ return i>0 && t[i]!=null && t[i-1]!=null && (t[i]-t[i-1])<=30; }
 
     function add(f){ findings.push(f); }
 
@@ -882,22 +885,6 @@
           series: col.map(function(b){return b?1:0;}), flagIdx: idxs, times:t});
       }
     });
-    // unknown raw dtc bytes
-    ["dtc2","dtc3","dtc4"].forEach(function(name){
-      if (!p.cols[name]) return;
-      var vals = p.cols[name];
-      var nonzero = vals.filter(function(v){ return v && v!=="0x00" && v!=="0" && v!==""; });
-      if (nonzero.length){
-        add({tier:"C", severity:"info", channel:name,
-          title:T("ECUが分類外の異常コードを検出("+name+" = "+nonzero[0]+")","ECU reports an unclassified fault code ("+name+" = "+nonzero[0]+")"),
-          component:T("内容不明(このアプリでは解読できないバイト)","Unknown (this app can't decode this byte)"),
-          desc:T("このバイトの意味は公開情報からは確認できていません。誤診断を避けるため内容の推測はしていません。専用の診断機(MemsFCR等)での確認、または値を記録して経過を見ることをおすすめします。",
-                 "This byte's meaning isn't confirmed by any public source. To avoid a false diagnosis, this tool doesn't guess at it. Consider checking with a dedicated diagnostic tool (e.g. MemsFCR) or just logging the value over time."),
-          checks:[T("他の所見と合わせて総合的に判断する","Weigh this alongside the other findings"),T("再現するか、次回以降のログでも同じ値が出るか記録しておく","Note whether it recurs or shows the same value in future logs")],
-          series:null, flagIdx:[], times:t});
-      }
-    });
-
     /* --- Tier A: battery voltage while running --- */
     if (batt && running){
       var lowIdx = maskIndices(batt.map(function(v,i){ return running[i] && v!=null && v<13; }));
@@ -926,19 +913,10 @@
             component:T("吸気系のバキューム(負圧)漏れ・インテークマニホールド","Intake vacuum leak, intake manifold"),
             readout:T("目安: 45kPa以下 ・ 実測(アイドル平均): <strong>"+mm.toFixed(1)+"kPa</strong>","Typical: 45kPa or below ・ Measured (idle avg): <strong>"+mm.toFixed(1)+"kPa</strong>"),
             range:{min:15,max:65,normalMin:15,normalMax:45,value:mm,unit:"kPa"},
-            desc:T("アイドル中のMAP平均が"+mm.toFixed(1)+"kPaです。45kPaを超えており、大きめのバキュームリークが疑われます。",
-                   "Average idle MAP is "+mm.toFixed(1)+"kPa, above the 45kPa mark — a sizeable vacuum leak is suspected."),
+            desc:T("アイドル中のMAP平均が"+mm.toFixed(1)+"kPaです。MemsFCRの基準(45kPa未満、理想35kPa)を超えており、バキュームリークが疑われます。MemsFCRは1回ごとの値で判定しますが、ここではアイドル中の平均で判定しています。",
+                   "Average idle MAP is "+mm.toFixed(1)+"kPa, above MemsFCR's limit (under 45kPa, ideally 35kPa) — a vacuum leak is suspected. MemsFCR judges each reading; this tool uses the idle average."),
             checks:[T("インテークマニホールドの継ぎ目・バキュームホースの亀裂を確認する","Check intake manifold joints and vacuum hoses for cracks"),T("フューエルトラップ(ブローバイ関連ホース)を指で塞いで変化を見る","Pinch the fuel/breather trap hose and see if it changes"),T("ホース類がフィッティングに奥まで刺さりすぎて内径を塞いでいないか確認する","Check that hoses aren't pushed on so far they pinch their own bore")],
             series: map_, flagIdx: idleIdx.filter(function(i){return map_[i]>45;}), times:t, threshold:45});
-        } else if (mm>41){
-          add({tier:"B", severity:"warning", channel:"manifoldPressure", title:T("アイドル時のMAPがやや高め(軽微なバキュームリークの可能性)","Idle MAP is a bit high (possible minor vacuum leak)"),
-            component:T("吸気系のバキューム(負圧)漏れ","Intake vacuum leak"),
-            readout:T("目安: 41kPa以下(正常の目安25-40kPa) ・ 実測(アイドル平均): <strong>"+mm.toFixed(1)+"kPa</strong>","Typical: 41kPa or below (normal range ~25-40kPa) ・ Measured (idle avg): <strong>"+mm.toFixed(1)+"kPa</strong>"),
-            range:{min:15,max:65,normalMin:15,normalMax:41,value:mm,unit:"kPa"},
-            desc:T("アイドル中のMAP平均が"+mm.toFixed(1)+"kPa(目安25-40kPaに対してやや高い)。軽微な漏れの可能性があります。",
-                   "Average idle MAP is "+mm.toFixed(1)+"kPa, a bit above the 25-40kPa typical range. A minor leak is possible."),
-            checks:[T("バキュームホースの亀裂・緩みを目視で確認する","Visually check vacuum hoses for cracks/looseness"),T("エンジン回転数を上げた時に症状が軽くなるか確認する(軽微な漏れは高回転ほど影響が小さい)","Check whether it improves at higher RPM (a small leak matters less as airflow rises)")],
-            series: map_, flagIdx: idleIdx, times:t, threshold:41});
         }
       }
     }
@@ -959,39 +937,20 @@
       }
     }
 
-    /* --- Tier A: idle error --- */
-    if (idleErr && idle){
-      var ie_idx = maskIndices(idleErr.map(function(v,i){ return idle[i] && v!=null && Math.abs(v)>100; }));
-      if (ie_idx.length){
-        var worstIe = Math.max.apply(null, ie_idx.map(function(i){return Math.abs(idleErr[i]);}));
-        add({tier:"A", severity:"critical", channel:"idleError", title:T("アイドル回転数の誤差が大きい(ECUがアイドル制御を失っている可能性)","Idle speed error is large (ECU may have lost idle control)"),
-          component:T("アイドルステッパー(ISCV)・バキュームリーク・スロットルワイヤー調整","Idle stepper (ISCV), vacuum leak, throttle cable adjustment"),
-          readout:T("目安: ±100rpm以内 ・ 実測(最大の誤差): <strong>"+worstIe.toFixed(0)+"rpm</strong>","Typical: within ±100rpm ・ Measured (max error): <strong>"+worstIe.toFixed(0)+"rpm</strong>"),
-          range:{min:0,max:200,normalMin:0,normalMax:100,value:worstIe,unit:"rpm"},
-          desc:T("アイドル中のアイドル誤差が100rpmを超える区間が"+ie_idx.length+"件あります。",
-                 "Idle error exceeded 100rpm in "+ie_idx.length+" sample(s) while idling."),
-          checks:[T("スロットルワイヤーの遊び(ロストモーションギャップ)を確認する","Check the throttle cable's slack (lost motion gap)"),T("バキュームホース類の漏れを確認する","Check vacuum hoses for leaks"),T("改善しなければステッパーモーター自体を疑う","If it doesn't improve, suspect the stepper motor itself")],
-          series: idleErr, flagIdx: ie_idx, times:t, threshold:100});
-      }
-    }
-
-    /* --- Tier A/B: fuel trim absolute level ---
-       注意: MEMSはMAP式(スピードデンシティ)なので、一般的な「燃調トリムが張り付く=バキュームリーク」という
-       定説はそのまま当てはまらない(MAP式はバキュームリークの影響をほぼ受けない、というのが一般的な知見)。
-       この車でバキュームリークを疑うべきサインは、燃調トリムではなく後述のアイドルステッパー位置(低い側)。
-       そのためここでは原因候補からバキュームリークを外し、燃圧・インジェクター・O2センサーのバイアスに絞る。 */
+    /* --- fuel trim: MemsFCR's code has no fuel trim check. The ±10% / ~25% figures come from
+       MemsFCR's "Understanding fuel trim in detail" article (general closed-loop knowledge). --- */
     if (ltft){
       var hi = maskIndices(ltft.map(function(v){ return v!=null && Math.abs(v)>25; }));
       var mid = maskIndices(ltft.map(function(v){ return v!=null && Math.abs(v)>10 && Math.abs(v)<=25; }));
       if (hi.length){
         var worstTrimIdx = hi.reduce(function(a,b){ return Math.abs(ltft[b])>Math.abs(ltft[a])?b:a; }, hi[0]);
         var worstTrim = ltft[worstTrimIdx];
-        add({tier:"A", severity:"critical", channel:"longTermFuelTrim", title:T("燃調トリムが±25%を超えている(明確な燃調異常)","Fuel trim exceeds ±25% (clear fuelling issue)"),
+        add({tier:"B", severity:"critical", channel:"longTermFuelTrim", title:T("燃調トリムが±25%を超えている(明確な燃調異常)","Fuel trim exceeds ±25% (clear fuelling issue)"),
           component:T("燃料系統(燃圧・インジェクター)・O2センサーのバイアス","Fuel system (pressure, injectors), O2 sensor bias"),
           readout:T("目安: ±25%以内 ・ 実測(最大): <strong>"+(worstTrim>0?"+":"")+worstTrim.toFixed(1)+"%</strong>","Typical: within ±25% ・ Measured (max): <strong>"+(worstTrim>0?"+":"")+worstTrim.toFixed(1)+"%</strong>"),
           range:{min:-40,max:40,normalMin:-25,normalMax:25,value:worstTrim,unit:"%"},
-          desc:T("長期燃調トリムの絶対値が25%を超える区間が"+hi.length+"件あります。プラス側ならリーン(薄い)、マイナス側ならリッチ(濃い)方向です。この車のECUは吸気管内の圧力を直接読んで燃料の量を決める方式なので、多少の空気漏れがあっても圧力センサーがそのまま読み取って帳尻を合わせてしまい、燃調トリムには出にくい傾向があります。空気漏れ(バキュームリーク)が疑わしい場合は、下のアイドルステッパー位置の所見(位置が低すぎないか)を確認してください。",
-                 "Long-term fuel trim's absolute value exceeded 25% in "+hi.length+" sample(s). Positive means lean, negative means rich. This car's ECU reads intake manifold pressure directly to calculate fuel, so a modest air leak tends to get compensated for automatically by the pressure sensor and doesn't show up much in fuel trim. If you suspect a vacuum leak, check the idle stepper position finding below instead (is it too low?)."),
+          desc:T("長期燃調トリムの絶対値が25%を超える区間が"+hi.length+"件あります。プラス側ならリーン(薄い)、マイナス側ならリッチ(濃い)方向です。MemsFCRの解説記事では、約25%で故障コードが出るレベルとされています。アイドルで高く、2000rpm程度まで回すと普通の値に戻るなら、軽いバキュームリークの可能性があります(MemsFCR)。",
+                 "Long-term fuel trim's absolute value exceeded 25% in "+hi.length+" sample(s). Positive means lean, negative means rich. MemsFCR's fuel trim article puts ~25% at the level where fault codes get set. If it's high at idle but returns to normal around 2000rpm, a small vacuum leak is possible (MemsFCR)."),
           checks:[T("アイドル・2500rpm・3500rpm程度でそれぞれ30秒以上値を観察し、回転数によって傾向が変わるか確認する(全域で高いなら燃圧/インジェクター/センサーの方を疑う)","Watch the value for 30s+ each at idle, ~2500rpm, and ~3500rpm — see if it changes with RPM (if high everywhere, suspect fuel pressure/injectors/sensor instead)"),T("燃圧・インジェクターの詰まりや漏れを確認する","Check fuel pressure and injectors for clogging/leaks"),T("O2センサーの出力自体に偏りがないか確認する","Check whether the O2 sensor's own output is biased")],
           series: ltft, flagIdx: hi, times:t, threshold:25});
       } else if (mid.length){
@@ -1001,77 +960,108 @@
           component:T("燃料系統・O2センサー","Fuel system, O2 sensor"),
           readout:T("目安: ±10%以内 ・ 実測(最大): <strong>"+(worstTrim2>0?"+":"")+worstTrim2.toFixed(1)+"%</strong>","Typical: within ±10% ・ Measured (max): <strong>"+(worstTrim2>0?"+":"")+worstTrim2.toFixed(1)+"%</strong>"),
           range:{min:-40,max:40,normalMin:-10,normalMax:10,value:worstTrim2,unit:"%"},
-          desc:T("長期燃調トリムの絶対値が10%を超える区間が"+mid.length+"件あります。まだ明確な異常ではありませんが注意が必要です。",
-                 "Long-term fuel trim's absolute value exceeded 10% in "+mid.length+" sample(s). Not a clear issue yet, but worth watching."),
-          checks:[T("経過を見て悪化していないか継続的にログを取る","Keep logging over time to see if it worsens")],
+          desc:T("長期燃調トリムの絶対値が10%を超える区間が"+mid.length+"件あります。MemsFCRの解説記事では、長期トリムは±5〜8%が普通で、10%前後を超えたら調べるべきとされています。",
+                 "Long-term fuel trim's absolute value exceeded 10% in "+mid.length+" sample(s). MemsFCR's fuel trim article says ±5-8% is normal for long-term trim and anything past about 10% should be looked into."),
+          checks:[T("アイドルと2000rpm程度で値を見比べる(アイドルだけ高いなら軽いバキュームリークの可能性)","Compare the value at idle and around 2000rpm (high only at idle suggests a small vacuum leak)"),T("経過を見て悪化していないか継続的にログを取る","Keep logging over time to see if it worsens")],
           series: ltft, flagIdx: mid, times:t, threshold:10});
       }
     }
 
-    /* --- Tier A/B: idle stepper position when warm+idle — direction-aware ---
-       一般に(メーカー問わず)ステッパー位置が低すぎる=どこかから余分な空気が入っている(バキュームリーク)、
-       高すぎる=通路が狭くなっている(カーボン詰まり等)・負荷が高い、という方向で解釈するのが定石。
-       具体的な数値(10-50)はMemsFCRの目安をそのまま使うが、方向ごとに原因候補を分ける。 */
-    if (iac && warm && idle){
-      var idleIdx0 = maskIndices(iac.map(function(v,i){ return warm[i] && idle[i] && v!=null; }));
-      var lowIdx0 = idleIdx0.filter(function(i){ return iac[i]<10; });
-      var highIdx0 = idleIdx0.filter(function(i){ return iac[i]>50; });
-      if (lowIdx0.length){
-        var lowIacMean = mean(lowIdx0.map(function(i){return iac[i];}));
-        add({tier:"B", severity:"warning", channel:"idleBypassPos", title:T("暖機後のアイドルステッパー位置が低すぎる(バキュームリークの疑い)","Idle stepper position is too low once warm (possible vacuum leak)"),
-          component:T("吸気系のバキューム(負圧)漏れ・スロットルワイヤー調整","Intake vacuum leak, throttle cable adjustment"),
-          readout:T("目安: 10ステップ以上 ・ 実測平均: <strong>"+lowIacMean.toFixed(0)+"ステップ</strong>","Typical: 10 steps or above ・ Measured avg: <strong>"+lowIacMean.toFixed(0)+" steps</strong>"),
-          range:{min:0,max:70,normalMin:10,normalMax:70,value:lowIacMean,unit:""},
-          desc:T(lowIdx0.length+"件、暖機後アイドル時のステッパー位置が目安(10-50)より低くなっています。どこかから余分な空気が入り込み、ECUがバルブを閉じ気味にして帳尻を合わせている可能性があります。",
-                 "In "+lowIdx0.length+" sample(s), warm-idle stepper position sat below the 10-50 typical range. Extra air may be sneaking in, with the ECU closing the valve further to compensate."),
-          checks:[T("インテークマニホールドの継ぎ目・バキュームホースの亀裂を確認する","Check intake manifold joints and vacuum hoses for cracks"),T("スロットルワイヤーが引っ張られすぎていないか確認する","Check the throttle cable isn't pulled too tight")],
-          series: iac, flagIdx: lowIdx0, times:t, threshold:10});
-      }
-      if (highIdx0.length){
-        var highIacMean = mean(highIdx0.map(function(i){return iac[i];}));
-        add({tier:"B", severity:"warning", channel:"idleBypassPos", title:T("暖機後のアイドルステッパー位置が高すぎる(通路の詰まり・負荷過多の疑い)","Idle stepper position is too high once warm (possible blockage/extra load)"),
-          component:T("アイドルステッパー通路のカーボン詰まり・スロットルボディ・補機負荷","Carbon buildup in the idle air passage, throttle body, accessory load"),
-          readout:T("目安: 50ステップ以下 ・ 実測平均: <strong>"+highIacMean.toFixed(0)+"ステップ</strong>","Typical: 50 steps or below ・ Measured avg: <strong>"+highIacMean.toFixed(0)+" steps</strong>"),
-          range:{min:0,max:70,normalMin:0,normalMax:50,value:highIacMean,unit:""},
-          desc:T(highIdx0.length+"件、暖機後アイドル時のステッパー位置が目安(10-50)より高くなっています。通路が狭くなっている、またはエアコン等の補機負荷が高い可能性があります。",
-                 "In "+highIdx0.length+" sample(s), warm-idle stepper position sat above the 10-50 typical range. The air passage may be restricted, or accessory load (e.g. A/C) may be high."),
-          checks:[T("ステッパー通路・スロットルボディのカーボン汚れを清掃する","Clean carbon deposits from the idle air passage and throttle body"),T("エアコン等の補機を切った状態でも改善しないか確認する","Check whether it improves with accessories like A/C switched off")],
-          series: iac, flagIdx: highIdx0, times:t, threshold:50});
+    /* --- Tier A: idle hot out of range (MemsFCR isHotIdleFaulty: warm, at idle, outside 10-55) --- */
+    var idleHot = numCol(p,"idleHot");
+    if (idleHot && warm && idle){
+      var hotIdx = maskIndices(idleHot.map(function(v,i){ return warm[i] && idle[i] && v!=null && (v<10 || v>55); }));
+      if (hotIdx.length){
+        var hotMean = mean(hotIdx.map(function(i){return idleHot[i];}));
+        add({tier:"A", severity:"warning", channel:"idleHot", title:T("暖機後のアイドルHotが範囲外","Idle hot is out of range once warm"),
+          component:T("アイドルステッパー・スロットル調整・バキューム系統","Idle stepper, throttle adjustment, vacuum system"),
+          readout:T("目安: 10〜55 ・ 実測平均: <strong>"+hotMean.toFixed(0)+"</strong>","Typical: 10-55 ・ Measured avg: <strong>"+hotMean.toFixed(0)+"</strong>"),
+          range:{min:0,max:80,normalMin:10,normalMax:55,value:hotMean,unit:""},
+          desc:T(hotIdx.length+"件、暖機後のアイドル中にアイドルHotがMemsFCRの基準(10〜55)を外れています。",
+                 "In "+hotIdx.length+" sample(s), idle hot sat outside MemsFCR's 10-55 range while warm and idling."),
+          checks:[T("スロットルワイヤーの遊び・スロットルの調整を確認する","Check throttle cable slack and throttle adjustment"),T("バキュームホース類の漏れを確認する","Check vacuum hoses for leaks"),T("ステッパーモーター・通路の汚れを確認する","Check the stepper motor and its air passage for dirt")],
+          series: idleHot, flagIdx: hotIdx, times:t, threshold:null});
       }
     }
 
-    /* --- Tier B: idle hunting but stepper position frozen → suspect ignition/fueling, not the valve itself --- */
-    if (idleErr && iac && idle){
-      var idleIdx2 = maskIndices(idle);
-      var ieVals = idleIdx2.map(function(i){return idleErr[i];}).filter(function(v){return v!=null;});
-      var iacVals2 = idleIdx2.map(function(i){return iac[i];}).filter(function(v){return v!=null;});
-      if (ieVals.length>=10 && iacVals2.length>=10){
-        var errAbsMean = mean(ieVals.map(Math.abs));
-        var iacSd2 = stddev(iacVals2);
-        if (errAbsMean!=null && errAbsMean>40 && iacSd2!=null && iacSd2<2){
-          add({tier:"B", severity:"warning", channel:"idleBypassPos",
-            title:T("アイドルが不安定なのにステッパー位置はほとんど動いていない(バルブ以外が原因の可能性)","Idle is unstable but the stepper barely moves (may not be the valve)"),
-            component:T("点火時期・燃調(ステッパーバルブ自体の可能性は低い)","Ignition timing, fuelling (the stepper valve itself is less likely)"),
-            desc:T("アイドル中の回転のブレが大きい(誤差の平均絶対値"+errAbsMean.toFixed(0)+"rpm)一方で、ステッパー位置はほぼ一定(ばらつき±"+iacSd2.toFixed(1)+")です。バルブが反応して調整しているのに追いつけていない訳ではなく、そもそも動いていないので、原因はバルブ自体よりも点火時期や燃調にある可能性が高いです。",
-                   "Idle RPM is wobbling a lot (mean absolute error "+errAbsMean.toFixed(0)+"rpm) while the stepper position stays nearly constant (±"+iacSd2.toFixed(1)+"). It's not that the valve is responding but can't keep up — it simply isn't moving, so ignition timing or fuelling is more likely the cause than the valve itself."),
-            checks:[T("点火系統(プラグ・コード・点火時期)を先に確認する","Check the ignition system first (plugs, leads, timing)"),T("燃調(燃圧・インジェクター)を確認する","Check fuelling (fuel pressure, injectors)"),T("ステッパーバルブ自体の優先度は下げてよい","The stepper valve itself can be a lower priority")],
-            series: iac, flagIdx: [], times:t, threshold:null});
+    /* --- Tier A: IAC stuck (MemsFCR isIACFaulty: at idle, idle speed offset > 50 while IAC position stays 0) --- */
+    var idleOffset = numCol(p,"idleSpeedOffset");
+    if (idleOffset && iac && idle){
+      var iacIdx = maskIndices(idleOffset.map(function(v,i){ return idle[i] && v!=null && v>50 && iac[i]===0; }));
+      if (iacIdx.length){
+        add({tier:"A", severity:"critical", channel:"idleBypassPos", title:T("アイドルステッパーが動いていない可能性","The idle stepper may not be moving"),
+          component:T("アイドルステッパーモーター・配線","Idle stepper motor, wiring"),
+          desc:T(iacIdx.length+"件、アイドル中に回転のズレ(アイドル回転オフセット)が50を超えているのに、IACポジションが0のままです(MemsFCRの判定と同じ条件)。",
+                 "In "+iacIdx.length+" sample(s) at idle, the idle speed offset exceeded 50 while the IAC position stayed at 0 (the same condition MemsFCR checks)."),
+          checks:[T("ステッパーモーターのコネクタ・配線を確認する","Check the stepper motor's connector and wiring"),T("部品テストでステッパーが動くか確認する","Use the actuator test to see whether the stepper moves")],
+          series: iac, flagIdx: iacIdx, times:t, threshold:null});
+      }
+    }
+
+    /* --- Tier A: thermostat (MemsFCR isThermostatFaulty) ---
+       From the first running sample, MemsFCR expects ~11 seconds per degree to reach 80°C.
+       Still under 78°C after that moment means the engine is warming too slowly. */
+    if (water && running){
+      var i0 = -1;
+      for (var k=0;k<water.length;k++){ if (running[k] && water[k]!=null && t[k]!=null){ i0=k; break; } }
+      if (i0>=0){
+        var warmAt = t[i0] + (80 - water[i0])*11;
+        var thIdx = maskIndices(water.map(function(v,i){ return running[i] && v!=null && t[i]!=null && t[i]>warmAt && v<78; }));
+        if (thIdx.length){
+          add({tier:"A", severity:"warning", channel:"waterTemp", title:T("水温がなかなか上がらない(サーモスタットの疑い)","Coolant is slow to warm up (possible thermostat fault)"),
+            component:T("サーモスタット(開きっぱなし)・水温センサー","Thermostat (stuck open), coolant sensor"),
+            desc:T("始動時の水温から計算すると("+water[i0].toFixed(0)+"°C、1°Cあたり約11秒)、もう78°Cを超えているはずの時刻を過ぎても下回っている区間が"+thIdx.length+"件あります(MemsFCRの判定と同じ計算)。",
+                   "Working from the starting coolant temp ("+water[i0].toFixed(0)+"°C, about 11 seconds per degree), it should already be past 78°C, yet it stayed below in "+thIdx.length+" sample(s) (the same calculation MemsFCR uses)."),
+            checks:[T("サーモスタットが開きっぱなしになっていないか確認する","Check whether the thermostat is stuck open"),T("冬場や渋滞の無い高速走行では温まりにくいこともあるので、走り方も合わせて見る","Warm-up can be slow in winter or steady fast driving, so consider how the car was driven")],
+            series: water, flagIdx: thIdx, times:t, threshold:78});
         }
       }
     }
 
-    /* --- Tier B: coolant overheating --- */
+    /* --- coolant stays above the fan switch-on temperature (own judgment on published numbers) ---
+       The stock fan switch (GVS104) turns the fan on at 96°C (Haynes lists 98°C on / 93°C off for the
+       Cooper auxiliary fan). With the fan running, coolant should come back down within a few minutes;
+       the 5-minute window is this tool's own choice. */
     if (water && running){
-      var hotIdx = maskIndices(water.map(function(v,i){ return running[i] && v!=null && v>100; }));
-      if (hotIdx.length){
-        var worstWater = Math.max.apply(null, hotIdx.map(function(i){return water[i];}));
-        add({tier:"B", severity:"critical", channel:"waterTemp", title:T("冷却水温が100°Cを超えている(オーバーヒートの可能性)","Coolant temp exceeds 100°C (possible overheating)"),
-          component:T("冷却系統(ラジエーター・ファン・冷却水量・サーモスタット)","Cooling system (radiator, fan, coolant level, thermostat)"),
-          readout:T("目安: 100°C以下(正常目安80-100°C) ・ 実測(最大): <strong>"+worstWater.toFixed(1)+"°C</strong>","Typical: 100°C or below (normal ~80-100°C) ・ Measured (max): <strong>"+worstWater.toFixed(1)+"°C</strong>"),
-          range:{min:50,max:120,normalMin:50,normalMax:100,value:worstWater,unit:"°C"},
-          desc:T(hotIdx.length+"件、水温が100°Cを超えています。","Coolant temp exceeded 100°C in "+hotIdx.length+" sample(s)."),
-          checks:[T("冷却水量・漏れを確認する","Check coolant level and for leaks"),T("ファンが正常に作動しているか確認する","Check the cooling fan is working properly"),T("サーモスタットの固着を確認する","Check the thermostat isn't stuck")],
-          series: water, flagIdx: hotIdx, times:t, threshold:100});
+      var FAN_ON = 96, HOLD_SEC = 300;
+      var runStart = -1, longest = null;
+      for (var i=0;i<water.length;i++){
+        var hot = running[i] && water[i]!=null && water[i]>FAN_ON;
+        if (hot && runStart>=0 && !contiguous(i)) runStart = -1;
+        if (hot && runStart<0) runStart = i;
+        if (!hot) runStart = -1;
+        if (hot && runStart>=0 && t[i]!=null && t[runStart]!=null){
+          var len = t[i]-t[runStart];
+          if (len>=HOLD_SEC && (!longest || len>longest.len)) longest = {from:runStart, to:i, len:len};
+        }
+      }
+      if (longest){
+        var seg = []; for (var q=longest.from;q<=longest.to;q++) seg.push(q);
+        var segMax = Math.max.apply(null, seg.map(function(q){return water[q];}));
+        add({tier:"C", severity:"warning", channel:"waterTemp", title:T("水温がファンの作動温度を超えたまま下がらない","Coolant stays above the fan switch-on temperature"),
+          component:T("冷却系統(ファン・ファンスイッチ・ラジエーター・冷却水量)","Cooling system (fan, fan switch, radiator, coolant level)"),
+          readout:T("目安: 96°Cを超えたら数分で下がる ・ 実測: <strong>"+(longest.len/60).toFixed(1)+"分</strong>続き、最高"+segMax.toFixed(0)+"°C","Typical: back down within minutes of passing 96°C ・ Measured: <strong>"+(longest.len/60).toFixed(1)+" min</strong>, peak "+segMax.toFixed(0)+"°C"),
+          desc:T("ファンが回り始める96°C(純正ファンスイッチGVS104。整備書ではCooperの補助ファンが98°C)を超えたまま、"+(longest.len/60).toFixed(1)+"分続いています(最高"+segMax.toFixed(0)+"°C、"+p.cols.time[longest.from]+"から)。冷却水には圧力がかかっているので、すぐ沸騰する温度ではありませんが、ファンが回っても冷えきれていない可能性があります。「5分」はこのツールで決めた目安です。",
+                 "Coolant stayed above 96°C, where the fan switches on (stock GVS104 switch; Haynes lists 98°C for the Cooper auxiliary fan), for "+(longest.len/60).toFixed(1)+" min (peak "+segMax.toFixed(0)+"°C, from "+p.cols.time[longest.from]+"). The system is pressurised so this isn't boiling yet, but the fan may not be keeping up. The 5-minute window is this tool's own guide."),
+          checks:[T("その時ファンが回っていたか確認する(ヒューズ・リレー・ファンスイッチ)","Check whether the fan was actually running (fuse, relay, fan switch)"),T("冷却水の量・ラジエーターの詰まりを確認する","Check the coolant level and for a clogged radiator"),T("エアコン使用・渋滞など、熱がこもる条件だったか合わせて見る","Consider whether A/C use or slow traffic was trapping heat")],
+          series: water, flagIdx: seg, times:t, threshold:FAN_ON});
+      }
+    }
+
+    /* --- coolant near boiling: Haynes gives a 1.05 bar pressure cap (1974 on), which puts the
+       boiling point of plain water around 120°C; 115°C leaves a small margin. --- */
+    if (water && running){
+      var boilIdx = maskIndices(water.map(function(v,i){ return running[i] && v!=null && v>=115; }));
+      if (boilIdx.length){
+        var worstWater = Math.max.apply(null, boilIdx.map(function(i){return water[i];}));
+        add({tier:"B", severity:"critical", channel:"waterTemp", title:T("水温が115°C以上(沸騰に近い・オーバーヒート)","Coolant at 115°C or more (near boiling, overheating)"),
+          component:T("冷却系統(冷却水量・ファン・ラジエーター・サーモスタット)","Cooling system (coolant level, fan, radiator, thermostat)"),
+          readout:T("目安: 115°C未満 ・ 実測(最大): <strong>"+worstWater.toFixed(0)+"°C</strong>","Typical: under 115°C ・ Measured (max): <strong>"+worstWater.toFixed(0)+"°C</strong>"),
+          range:{min:60,max:130,normalMin:60,normalMax:115,value:worstWater,unit:"°C"},
+          desc:T(boilIdx.length+"件、水温が115°C以上になっています。整備書(Haynes)のラジエーターキャップ圧1.05barから計算すると、水の沸点は約120°Cです。それに近い温度です。",
+                 "Coolant reached 115°C or more in "+boilIdx.length+" sample(s). From the Haynes manual's 1.05 bar pressure cap, plain water boils at about 120°C, so this is close."),
+          checks:[T("すぐに安全な場所に止めてエンジンを冷ます(熱いうちにキャップを開けない)","Stop somewhere safe and let it cool (don't open the cap while hot)"),T("冷却水の量・漏れを確認する","Check coolant level and for leaks"),T("ファン・サーモスタットの作動を確認する","Check the fan and thermostat work")],
+          series: water, flagIdx: boilIdx, times:t, threshold:115});
       }
     }
 
@@ -1081,7 +1071,7 @@
       if (wm!=null && wm>=58 && wm<=61 && ws!=null && ws<1.5 && water.length>=5){
         add({tier:"B", severity:"critical", channel:"waterTemp", title:T("水温が59〜60°C付近で一切動いていない(センサー断線の疑い)","Coolant temp is stuck at ~59-60°C (possible sensor open circuit)"),
           component:T("水温センサー(断線時のECU代替値と一致)","Coolant sensor (matches the ECU's open-circuit fallback value)"),
-          desc:T("ログ全体で水温がほぼ固定値("+wm.toFixed(1)+"°C、ばらつき±"+ws.toFixed(2)+")のままです。これはセンサー断線時にECUが返す代替値の範囲と一致します。一見「正常範囲内」に見えるため見逃しやすいパターンです。",
+          desc:T("ログ全体で水温がほぼ固定値("+wm.toFixed(1)+"°C、ばらつき±"+ws.toFixed(2)+")のままです。MemsFCRの診断ページによると、センサーが断線すると約60°Cの固定値が表示されます。一見「正常範囲内」に見えるため見逃しやすいパターンです。",
                  "Coolant temp sits at a near-constant value ("+wm.toFixed(1)+"°C, ±"+ws.toFixed(2)+") across the whole log. This matches the range the ECU substitutes when the sensor circuit is open. It's an easy one to miss because it looks like it's \"in range.\""),
           checks:[T("水温センサーのコネクタ・配線の断線を確認する","Check the coolant sensor's connector and wiring for a break"),T("センサー単体の抵抗値を測る(目安: 20°Cで概ね2.4-2.6kΩ、80°Cで概ね300Ω)","Measure the sensor's own resistance (roughly 2.4-2.6kΩ at 20°C, ~300Ω at 80°C)")],
           series: water, flagIdx: maskIndices(water.map(function(){return true;})), times:t, threshold:null});
@@ -1090,31 +1080,46 @@
     if (iat){
       var im = mean(iat), is_ = stddev(iat);
       if (im!=null && im>=34 && im<=36 && is_!=null && is_<1.5 && iat.length>=5){
-        add({tier:"B", severity:"critical", channel:"intakeAirTemp", title:T("吸気温が35°C付近で一切動いていない(センサー故障の疑い)","Intake air temp is stuck at ~35°C (possible sensor fault)"),
+        add({tier:"C", severity:"warning", channel:"intakeAirTemp", title:T("吸気温が35°C付近で一切動いていない(センサー故障の疑い)","Intake air temp is stuck at ~35°C (possible sensor fault)"),
           component:T("吸気温センサー(断線/未接続時のECU代替値と一致)","Intake temp sensor (matches the ECU's disconnected/fault fallback value)"),
-          desc:T("ログ全体で吸気温がほぼ固定値("+im.toFixed(1)+"°C)のままです。センサー未接続/故障時の代替値と一致します。",
+          desc:T("ログ全体で吸気温がほぼ固定値("+im.toFixed(1)+"°C)のままです。MemsFCRの診断ページでは、断線時は固定値が表示されるとされていますが、35°Cという数字には出典が見つかっていません。",
                  "Intake air temp sits at a near-constant value ("+im.toFixed(1)+"°C) across the whole log. This matches the fallback value used when the sensor is disconnected/faulty."),
           checks:[T("吸気温センサーのコネクタ・配線を確認する","Check the intake temp sensor's connector and wiring")],
           series: iat, flagIdx: maskIndices(iat.map(function(){return true;})), times:t, threshold:null});
       }
     }
 
-    /* --- lambda: stuck (not oscillating) and spoofed-disconnect value --- */
-    if (lambda && t){
+    /* --- Tier A: O2 sensor (MemsFCR isLambdaFaulty / O2SystemFault) ---
+       MemsFCR skips these on the MEMS 1.3, but the author's 1.3 car runs closed loop with a lively
+       sensor, so they're applied whenever the log shows closed loop at all (cars without an O2
+       sensor never enter closed loop and are left alone). */
+    var hasO2 = closedLoop && closedLoop.some(function(b){return b;});
+    if (lambda && t && hasO2){
       var t0 = t[0]!=null?t[0]:0;
-      var afterWarmupIdx = maskIndices(t.map(function(v){ return v!=null && (v-t0)>=90; }));
+      var afterWarmupIdx = maskIndices(t.map(function(v,i){ return v!=null && (v-t0)>=90 && (!running || running[i]); }));
       if (afterWarmupIdx.length>5){
         var lwin = afterWarmupIdx.map(function(i){return lambda[i];});
         var lsd = stddev(lwin), lm = mean(lwin);
         if (lsd!=null && lsd<100){
-          var isSpoof = lm!=null && lm>=420 && lm<=450;
           add({tier:"A", severity:"critical", channel:"lambdaVoltage_mV",
-            title: isSpoof ? T("O2センサー電圧が435mV付近に固定(未接続/センサー故障の疑い)","O2 sensor voltage is stuck at ~435mV (possible disconnected/faulty sensor)") : T("O2センサー電圧が振動していない(固着の疑い)","O2 sensor voltage isn't oscillating (possibly stuck)"),
+            title:T("O2センサー電圧が振動していない(固着の疑い)","O2 sensor voltage isn't oscillating (possibly stuck)"),
             component:T("O2(ラムダ)センサー・ヒーターリレー・配線","O2 (lambda) sensor, heater relay, wiring"),
-            desc:T("始動90秒後以降、O2電圧の振れ幅(標準偏差)が"+lsd.toFixed(1)+"mVとほぼ一定です(健全なら0-1000mV付近を1秒に1回以上のペースで往復します)。平均値は"+ (lm?lm.toFixed(0):"?") +"mV。"+(isSpoof?"未接続時の代替値(435mV付近)と一致します。":""),
-                   "From 90 seconds after start onward, O2 voltage's swing (standard deviation) is a near-constant "+lsd.toFixed(1)+"mV (a healthy sensor swings roughly 0-1000mV, at least once a second). Average is "+(lm?lm.toFixed(0):"?")+"mV."+(isSpoof?" This matches the disconnected-sensor fallback value (~435mV).":"")),
+            desc:T("始動90秒後以降、O2電圧の振れ幅(標準偏差)が"+lsd.toFixed(1)+"mVで、MemsFCRの基準(100mV)に届いていません。健全なら100〜900mV付近を1秒に1回以上のペースで往復します。平均値は"+(lm?lm.toFixed(0):"?")+"mV。※MemsFCRはMEMS 1.3ではこの判定をしませんが、このログではクローズドループ(O2センサーを使った制御)になっているため判定しています。",
+                   "From 90 seconds after start, the O2 voltage swing (standard deviation) is "+lsd.toFixed(1)+"mV, short of MemsFCR's 100mV mark. A healthy sensor swings roughly 100-900mV at least once a second. Average "+(lm?lm.toFixed(0):"?")+"mV. *MemsFCR skips this check on the MEMS 1.3, but this log shows closed loop (fuelling from the O2 sensor), so it's applied."),
             checks:[T("燃料の供給側ホースを一時的につまみ、電圧が下がるか確認する(下がれば配管側、下がらなければセンサー側)","Briefly pinch the fuel supply hose and see if voltage drops (if it does, suspect the fuel side; if not, the sensor)"),T("燃料のリターン側ホースを一時的につまみ、電圧が上がるか確認する","Briefly pinch the fuel return hose and see if voltage rises"),T("センサーコネクタの接続・ヒーターリレーを確認する","Check the sensor connector and heater relay")],
             series: lambda, flagIdx: afterWarmupIdx, times:t, threshold:null});
+        }
+      }
+      var lstat = boolCol(p,"lambdaStatus");
+      if (lstat){
+        var offIdx = maskIndices(lstat.map(function(b,i){ return !b && t[i]!=null && (t[i]-t0)>=90 && (!running || running[i]); }));
+        if (offIdx.length){
+          add({tier:"A", severity:"warning", channel:"lambdaStatus", title:T("O2センサーが無効になっている時間がある","The O2 sensor is reported disabled at times"),
+            component:T("O2(ラムダ)センサー・ヒーター・配線","O2 (lambda) sensor, heater, wiring"),
+            desc:T("始動90秒後以降に、ECUがO2センサーを「無効」としている区間が"+offIdx.length+"件あります(MemsFCRの判定と同じ項目)。",
+                   "From 90 seconds after start, the ECU reported the O2 sensor as disabled in "+offIdx.length+" sample(s) (the same item MemsFCR checks)."),
+            checks:[T("O2センサーのヒーター回路・リレーを確認する","Check the O2 sensor heater circuit and relay"),T("センサーのコネクタ・配線を確認する","Check the sensor connector and wiring")],
+            series: lstat.map(function(b){return b?1:0;}), flagIdx: offIdx, times:t, threshold:null});
         }
       }
     }
@@ -1132,11 +1137,11 @@
       if (vals.length < 20) return;
       var sd = stddev(vals);
       if (sd!=null && sd < sdThreshold){
-        add({tier:"B", severity:"warning", channel:name,
+        add({tier:"C", severity:"warning", channel:name,
           title:colLabel(name)+T("の値がほとんど変化していない(固着・断線の可能性)"," barely changes (possibly stuck/open circuit)"),
           component:component,
-          desc:T("走行中"+vals.length+"件を通じてこの項目がほぼ一定です(ばらつき±"+sd.toFixed(2)+unit+")。本来スロットル操作やエンジン負荷で変動するはずの項目なので、数値そのものが正常範囲内でも「動かない」こと自体が異常のサインになり得ます(範囲チェックとは別の「妥当性チェック」の考え方)。",
-                 "This value stays nearly constant across "+vals.length+" running samples (±"+sd.toFixed(2)+unit+"). Since it should normally vary with throttle input or engine load, the fact that it doesn't move can itself be a red flag, even if the value looks in-range (a \"rationality check\", separate from a plain range check)."),
+          desc:T("走行中"+vals.length+"件を通じてこの項目がほぼ一定です(ばらつき±"+sd.toFixed(2)+unit+")。本来スロットル操作やエンジン負荷で変動するはずの項目なので、数値そのものが正常範囲内でも「動かない」こと自体が異常のサインになり得ます(範囲チェックとは別の「妥当性チェック」の考え方。「ほとんど変化していない」の基準はこのツール独自です)。",
+                 "This value stays nearly constant across "+vals.length+" running samples (±"+sd.toFixed(2)+unit+"). Since it should normally vary with throttle input or engine load, the fact that it doesn't move can itself be a red flag, even if the value looks in-range (a \"rationality check\", separate from a plain range check; the \"barely changes\" threshold is this tool's own)."),
           checks:checks, series:col, flagIdx:[], times:t, threshold:null});
       }
     }
@@ -1169,8 +1174,8 @@
       }
     }
     trendFinding("longTermFuelTrim",T("長期燃調トリム","Long-term fuel trim"),T("燃料系統(燃圧・インジェクター)・O2センサーのバイアス","Fuel system (pressure, injectors), O2 sensor bias"),"%",8,
-      T("走行の前半と後半で燃調トリムの平均が変化しています。まだしきい値(±25%)には達していませんが、緩やかな進行の可能性があります。この車は圧力センサー方式のECUなので、空気漏れよりも燃圧・インジェクター・O2センサー側を優先して疑ってください(空気漏れが疑わしい時はアイドルステッパー位置の所見を見てください)。",
-        "Average fuel trim differs between the first and second half of the drive. It hasn't reached the ±25% threshold yet, but this could be a slow-developing issue. Since this ECU reads pressure directly, prioritize fuel pressure/injectors/O2 sensor over a vacuum leak (check the idle stepper finding if you suspect a leak)."));
+      T("走行の前半と後半で燃調トリムの平均が変化しています。まだはっきりした異常の目安(±25%)には達していませんが、ゆっくり進んでいる変化の可能性があります。",
+        "Average fuel trim differs between the first and second half of the drive. It hasn't reached the clear-fault level (±25%) yet, but this could be a slow-developing change."));
     trendFinding("mainVoltage",T("バッテリー電圧","Battery voltage"),T("バッテリー・オルタネーター・アース線","Battery, alternator, earth/ground strap"),"V",0.3,
       T("走行の前半と後半でバッテリー電圧の平均が下がっています。充電系統の劣化の初期兆候である可能性があります。","Average battery voltage is lower in the second half of the drive than the first. This could be an early sign of a weakening charging system."));
 
@@ -1274,7 +1279,7 @@
     el.innerHTML =
       '<div class="finding-main">'+
         '<div class="finding-top"><span class="finding-title">'+f.title+'</span>'+
-        '<span class="badge tier-'+f.tier+'">Tier '+f.tier+'</span></div>'+
+        '<span class="badge tier-'+f.tier+'">'+tierLabel(f.tier)+'</span></div>'+
         '<div class="finding-component">'+T("疑わしい箇所: ","Suspect area: ")+f.component+'</div>'+
         readoutHtml + rangeHtml +
         '<div class="finding-desc">'+f.desc+'</div>'+
