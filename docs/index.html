@@ -385,7 +385,11 @@
   .ac-range{font-size:12px; color:var(--text-muted); margin-left:6px;}
   .ac-cursor{font-size:12px; color:var(--accent-strong); font-weight:600;}
   .ac-pick{margin:4px 0 2px;}
-  .ac-pick summary{cursor:pointer; font-size:13px; font-weight:600; color:var(--accent-strong); padding:4px 0;}
+  .ac-pick summary{cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--accent-strong); background:var(--accent-soft); border:1px solid var(--accent); border-radius:7px; padding:8px 14px;}
+  .ac-pick summary::-webkit-details-marker{display:none;}
+  .ac-pick summary::before{content:"▼"; font-size:11px;}
+  .ac-pick[open] summary::before{content:"▲";}
+  .ac-pick summary:hover{background:var(--accent); color:var(--surface);}
   .ac-chips{display:flex; flex-wrap:wrap; gap:6px; padding:6px 0;}
   .ac-chip{font:inherit; font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer;}
   .ac-chip.on{background:var(--accent); border-color:var(--accent); color:var(--surface);}
@@ -512,11 +516,11 @@
       <span class="mono ac-range" id="acRange"></span>
       <span class="mono ac-cursor" id="acCursor"></span>
     </div>
-    <div class="modal-note" id="acHint"></div>
     <details class="ac-pick">
       <summary id="acPickTitle"></summary>
       <div class="ac-chips" id="acChips"></div>
     </details>
+    <div class="modal-note" id="acHint"></div>
     <div id="acRows"></div>
   </div>
 </div>
@@ -1559,7 +1563,8 @@
 
   function acChannels(p){
     return p.header.filter(function(h){
-      if (h==="time" || BOOL_COLS[h] || UNUSED_COLS[h]) return false;
+      // dtc bytes are codes written as hex ("0xFF"), not quantities -- parseFloat would chart them as 0
+      if (h==="time" || BOOL_COLS[h] || UNUSED_COLS[h] || /^dtc\d$/.test(h)) return false;
       var c = numCol(p,h);
       return c && c.some(function(v){ return v!=null; });
     });
@@ -1620,7 +1625,7 @@
   function acBuildChips(){
     var box = document.getElementById("acChips");
     box.innerHTML = "";
-    document.getElementById("acPickTitle").textContent = T("表示する項目を選ぶ","Choose channels")+" ("+AC.sel.length+"/"+AC.chans.length+")";
+    document.getElementById("acPickTitle").textContent = T("グラフに出す項目を選ぶ","Choose which channels to chart")+" ("+AC.sel.length+"/"+AC.chans.length+T("項目)"," shown)");
     AC.chans.forEach(function(c){
       var b = document.createElement("button");
       b.type = "button";
