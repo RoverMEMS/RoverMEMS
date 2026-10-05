@@ -1163,8 +1163,8 @@ private fun DetailedDataList(data: MemsData, modifier: Modifier = Modifier) {
         stringResource(R.string.detail_iac_position) to "${data.iacPosition}",
         stringResource(R.string.detail_battery_voltage) to "%.2f V".format(data.batteryVoltage),
         stringResource(R.string.detail_afr) to "%.1f".format(data.airFuelRatio),
-        stringResource(R.string.detail_lambda_freq) to "${data.lambdaSensorFrequency}",
-        stringResource(R.string.detail_lambda_duty) to "${data.lambdaSensorDutyCycle}",
+        // Lambda sensor frequency/duty cycle and canister purge duty are left off:
+        // MEMSFCR documents them as unused on these ECUs. They're still logged.
         stringResource(R.string.detail_lambda_status) to if (data.lambdaSensorStatus) enabledText else disabledText,
         stringResource(R.string.detail_closed_loop) to if (data.closedLoop) enabledText else disabledText,
         stringResource(R.string.detail_idle_base_pos) to "${data.idleBasePos}",
@@ -1172,7 +1172,6 @@ private fun DetailedDataList(data: MemsData, modifier: Modifier = Modifier) {
         stringResource(R.string.metric_ignition) to "%.1f °".format(data.ignitionAdvanceDeg),
         stringResource(R.string.detail_fuel_trim_long) to "%+d".format(data.longTermFuelTrim),
         stringResource(R.string.detail_fuel_trim_short) to "%+d".format(data.shortTermFuelTrim),
-        stringResource(R.string.detail_canister_duty) to "${data.carbonCanisterDutyCycle}",
         stringResource(R.string.detail_idle_switch) to if (data.idleSwitch) "ON" else "OFF",
         stringResource(R.string.detail_park_neutral) to if (data.parkNeutralSwitch) "ON" else "OFF",
         stringResource(R.string.detail_coil_time) to "%.0f µs".format(data.coilTimeMs * 1000f)

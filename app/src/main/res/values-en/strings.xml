@@ -85,15 +85,12 @@
     <string name="detail_iac_position">IAC Position</string>
     <string name="detail_battery_voltage">Battery Voltage</string>
     <string name="detail_afr">Air/Fuel Ratio</string>
-    <string name="detail_lambda_freq">Lambda Sensor Frequency</string>
-    <string name="detail_lambda_duty">Lambda Sensor Duty Cycle</string>
     <string name="detail_lambda_status">Lambda Sensor Status</string>
     <string name="detail_closed_loop">Closed Loop</string>
     <string name="detail_idle_base_pos">Idle Base Position</string>
     <string name="detail_idle_error">Idle Error</string>
     <string name="detail_fuel_trim_long">Fuel Trim (Long)</string>
     <string name="detail_fuel_trim_short">Fuel Trim (Short)</string>
-    <string name="detail_canister_duty">Canister Purge Duty Cycle</string>
     <string name="detail_idle_switch">Idle Switch</string>
     <string name="detail_park_neutral">Park/Neutral Switch</string>
     <string name="detail_coil_time">Coil Time</string>
