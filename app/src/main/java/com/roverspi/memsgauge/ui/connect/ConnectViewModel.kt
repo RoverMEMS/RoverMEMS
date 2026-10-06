@@ -60,6 +60,7 @@ class ConnectViewModel(
     }
 
     fun connectToDevice(bleDevice: BleDevice, onConnected: (EcuDataSource) -> Unit) {
+        if (_connecting.value) return // 連打による二重接続を防ぐ
         _connecting.value = true
         _connectionError.value = false
         bleScanner.stopScan()

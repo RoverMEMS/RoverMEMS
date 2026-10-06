@@ -229,6 +229,7 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                     g: BluetoothGatt,
                     characteristic: BluetoothGattCharacteristic
                 ) {
+                    if (g !== gatt) return // 古い接続からの受信は捨てる
                     val value = characteristic.value ?: return
                     if (rawNotifyLogRemaining > 0) {
                         rawNotifyLogRemaining--
@@ -237,7 +238,21 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                     value.forEach { byte -> incomingBytes.trySendBlocking(byte) }
                 }
             }
-            gatt = device.connectGatt(context, false, callback)
+            // 前の接続が残っていると、新しい接続と同時にモジュールへ二重につながり
+            // 受信データが2回ずつ届く(10-06朝の不調)。必ず先に閉じてから始める。
+            gatt?.let { old ->
+                old.disconnect()
+                Handler(Looper.getMainLooper()).postDelayed({ old.close() }, STALE_GATT_CLOSE_DELAY_MS)
+            }
+            val created = device.connectGatt(context, false, callback)
+            gatt = created
+            // 呼び出し側がキャンセル/タイムアウトした時は、この接続を必ず切る
+            // (放置すると裏でつながり続けて次の接続と二重になる)。
+            continuation.invokeOnCancellation {
+                created.disconnect()
+                Handler(Looper.getMainLooper()).postDelayed({ created.close() }, STALE_GATT_CLOSE_DELAY_MS)
+                if (gatt === created) gatt = null
+            }
         }
 
     @Suppress("DEPRECATION")

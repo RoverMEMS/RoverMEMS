@@ -56,6 +56,9 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
     // talk to the transport at the same time, or their bytes interleave.
     private val linkMutex = Mutex()
 
+    /** [connect]の二重起動防止用。 */
+    private val connectMutex = Mutex()
+
     /** Selects which discovered device to use on the next [connect] call. */
     fun setDevice(device: BluetoothDevice) {
         pendingDevice = device
@@ -73,25 +76,35 @@ class BleEcuDataSource(context: Context) : EcuDataSource {
             _connectionState.value = ConnectionState.ERROR
             return
         }
-        autoReconnectJob?.cancel()
-        autoReconnectJob = null
-        pollingJob?.cancel()
-        pollingJob = null
-        transport.disconnect()
-        _connectionState.value = ConnectionState.CONNECTING
-        val version = performHandshake(device)
-        if (version == null) {
-            _connectionState.value = ConnectionState.ERROR
+        // 接続処理の二重起動(ボタン連打など)を防ぐ。二重に走ると同じモジュールへ
+        // 接続が2本つながり、受信データが重複して読み取りがずれる。
+        if (!connectMutex.tryLock()) {
+            Log.w(TAG, "connect: already in progress, ignored")
             return
         }
-        _ecuVersion.value = version
-        _connectionState.value = ConnectionState.CONNECTED
-        transport.onUnexpectedDisconnect = {
+        try {
+            autoReconnectJob?.cancel()
+            autoReconnectJob = null
             pollingJob?.cancel()
             pollingJob = null
-            startAutoReconnect()
+            transport.disconnect()
+            _connectionState.value = ConnectionState.CONNECTING
+            val version = performHandshake(device)
+            if (version == null) {
+                _connectionState.value = ConnectionState.ERROR
+                return
+            }
+            _ecuVersion.value = version
+            _connectionState.value = ConnectionState.CONNECTED
+            transport.onUnexpectedDisconnect = {
+                pollingJob?.cancel()
+                pollingJob = null
+                startAutoReconnect()
+            }
+            pollingJob = scope.launch { pollLoop(version) }
+        } finally {
+            connectMutex.unlock()
         }
-        pollingJob = scope.launch { pollLoop(version) }
     }
 
     /**
