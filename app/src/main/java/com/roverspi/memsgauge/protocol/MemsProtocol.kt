@@ -147,7 +147,7 @@ class MemsProtocol(private val transport: ByteTransport) {
 
     // 0x7D(ラムダ・燃料トリム等)は0x80ほど速く変わらないので FRAME_7D_EVERY 回に
     // 1回だけ取り、間は前回の値を使う。メーターに使う0x80の更新回数が増える
-    // (iPhoneのウェブ版と同じ。BLEは1往復が重いので効果が大きい)。
+    // (BLEは1往復が重いので効果が大きい)。
     private var cachedFrame7d: MemsFrame7d? = null
     private var readCount = 0
 
