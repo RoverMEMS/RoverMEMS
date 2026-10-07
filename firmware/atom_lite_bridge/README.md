@@ -8,9 +8,9 @@
 
 | 部品 | 目安 |
 |---|---|
-| M5Stack ATOM Lite | [秋月電子 通販コード 117209](https://akizukidenshi.com/catalog/g/g117209/) |
-| 双方向レベル変換モジュール（秋月電子 AE-LCNV4-MOSFET） | 約200円。ATOM Lite（3.3V）と車（5V）の電圧の違いを吸収する |
-| ジャンパワイヤ（オス－メス） | 7本。[秋月電子 通販コード 117228](https://akizukidenshi.com/catalog/g/g117228/)（コネクター付ケーブル 20cm 40P オスメス） |
+| M5Stack ATOM Lite | [秋月電子 通販コード 117209](https://akizukidenshi.com/catalog/g/g117209/)（税込1,980円） |
+| 双方向レベル変換モジュール（秋月電子 AE-LCNV4-MOSFET） | [秋月電子 通販コード 113837](https://akizukidenshi.com/catalog/g/g113837/)（税込200円）。ATOM Lite（3.3V）と車（5V）の電圧の違いを吸収する |
+| ジャンパワイヤ（オス－メス） | 7本。[秋月電子 通販コード 117228](https://akizukidenshi.com/catalog/g/g117228/)（コネクター付ケーブル 20cm 40P オスメス、税込180円） |
 | USB-A → USB-C ケーブル（データ対応） | 100均で購入できる。プログラムの書き込みと、車での電源に使う |
 | 3ピンカプラー（オス側）＋電線（緑・白） | [延長ハーネス①](../../cable/README.md)の3ピンカプラーと対になる側 |
 
