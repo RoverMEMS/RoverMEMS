@@ -258,7 +258,11 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                 old.disconnect()
                 Handler(Looper.getMainLooper()).postDelayed({ old.close() }, STALE_GATT_CLOSE_DELAY_MS)
             }
-            val created = device.connectGatt(context, false, callback)
+            // ATOM Lite(ESP32)はBluetooth Classicも持つ2方式対応機。transport指定が
+            // 無いとAndroidがClassic側で張ろうとして、つながるのにサービス探索だけ
+            // 返事が来ない(毎回1回目が固まる)ことがある。BLE(LE)を明示する。
+            // iPhone(CoreBluetooth)は最初からLE専用なので出ない。
+            val created = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
             gatt = created
             // 呼び出し側がキャンセル/タイムアウトした時は、この接続を必ず切る
             // (放置すると裏でつながり続けて次の接続と二重になる)。
