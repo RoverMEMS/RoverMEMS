@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -16,13 +18,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -32,7 +39,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roverspi.memsgauge.R
 import com.roverspi.memsgauge.RoverMemsApp
 import com.roverspi.memsgauge.ble.BlePermissions
+import com.roverspi.memsgauge.ble.BleDevice
 import com.roverspi.memsgauge.ble.BleScanner
+import com.roverspi.memsgauge.ble.LastBleDevicePrefs
 import com.roverspi.memsgauge.datasource.EcuDataSource
 import com.roverspi.memsgauge.ui.LanguageToggleButton
 
@@ -53,6 +62,37 @@ fun ConnectScreen(
     val connectionError by viewModel.connectionError.collectAsState()
     val devices by viewModel.discoveredDevices.collectAsState()
     val usbDrivers by viewModel.usbDrivers.collectAsState()
+
+    var autoConnect by remember { mutableStateOf(LastBleDevicePrefs.isAutoConnectEnabled(context)) }
+
+    // つながったら機器を覚える(次回起動時の自動接続用)。
+    fun connectBle(device: BleDevice) {
+        viewModel.connectToDevice(device) { source ->
+            LastBleDevicePrefs.save(context, device.address)
+            onConnected(source)
+        }
+    }
+
+    // アプリ起動後、最初の接続画面でだけ: 前回の機器が見えたら自動で接続する。
+    // 見つからないまま・失敗した場合は今までどおり一覧から選ぶ。
+    LaunchedEffect(Unit) {
+        if (!LastBleDevicePrefs.autoConnectTried &&
+            autoConnect &&
+            LastBleDevicePrefs.lastAddress(context) != null &&
+            BlePermissions.hasRequiredPermissions(context)
+        ) {
+            viewModel.selectMode(SourceMode.BLUETOOTH)
+        }
+    }
+    LaunchedEffect(devices) {
+        val last = LastBleDevicePrefs.lastAddress(context)
+        if (!LastBleDevicePrefs.autoConnectTried && autoConnect && mode == SourceMode.BLUETOOTH && !connecting && last != null) {
+            devices.firstOrNull { it.address == last }?.let {
+                LastBleDevicePrefs.autoConnectTried = true
+                connectBle(it)
+            }
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -132,13 +172,27 @@ fun ConnectScreen(
                     }
                     SourceMode.BLUETOOTH -> {
                         Text(stringResource(R.string.connect_ble_tap_device))
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Switch(
+                                checked = autoConnect,
+                                onCheckedChange = {
+                                    autoConnect = it
+                                    LastBleDevicePrefs.setAutoConnectEnabled(context, it)
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.connect_auto_connect))
+                        }
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp)
                         ) {
                             items(devices) { device ->
-                                TextButton(onClick = { viewModel.connectToDevice(device, onConnected) }) {
+                                TextButton(onClick = { LastBleDevicePrefs.autoConnectTried = true; connectBle(device) }) {
                                     Text(device.name ?: device.address)
                                 }
                             }
