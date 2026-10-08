@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import com.roverspi.memsgauge.logging.DebugLog as Log
 import com.roverspi.memsgauge.logging.describeBytes
 import com.roverspi.memsgauge.protocol.ByteTransport
@@ -93,6 +94,7 @@ class BleUartTransport(private val context: Context) : ByteTransport {
         suspendCancellableCoroutine { continuation ->
             var resumed = false
             var servicesDiscovered = false
+            var connectedAtMs = 0L
             val callback = object : BluetoothGattCallback() {
                 override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
                     Log.d(TAG, "onConnectionStateChange: status=$status newState=$newState")
@@ -102,8 +104,21 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                         // 待った後の初回だけ返事が来ない例が続いたため、待たずに呼ぶ。
                         val started = g.discoverServices()
                         Log.d(TAG, "discoverServices() called, returned=$started")
-                        // 探索は普通1秒以内に終わる。返事が来ないまま固まった接続は
-                        // 短く見切って切り、すぐ再試行に回す(全体の20秒待ちを避ける)。
+                        // 探索は普通1秒以内に終わる(成功時0.8〜1.7秒)。毎回ではないが、
+                        // 返事が来ないまま固まる接続がある(10-08のログで4回中3回)。
+                        // 1.5秒で返事が無ければ同じ接続で探索をもう一度呼び(切り分け用:
+                        // これで返れば原因はAndroid側、返らなければATOM側)、それでも
+                        // 3秒で返事が無ければ見切って切り、すぐ再試行に回す。
+                        connectedAtMs = SystemClock.elapsedRealtime()
+                        Handler(Looper.getMainLooper()).postDelayed(
+                            {
+                                if (!servicesDiscovered && !resumed) {
+                                    val again = g.discoverServices()
+                                    Log.w(TAG, "service discovery got no reply in ${SERVICE_DISCOVERY_RETRY_MS}ms, calling discoverServices() again, returned=$again")
+                                }
+                            },
+                            SERVICE_DISCOVERY_RETRY_MS
+                        )
                         Handler(Looper.getMainLooper()).postDelayed(
                             {
                                 if (!servicesDiscovered && !resumed) {
@@ -148,6 +163,7 @@ class BleUartTransport(private val context: Context) : ByteTransport {
                 @Suppress("DEPRECATION")
                 override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
                     servicesDiscovered = true
+                    Log.d(TAG, "service discovery replied ${SystemClock.elapsedRealtime() - connectedAtMs}ms after connect")
                     val profile = BleUartProfiles.KNOWN_PROFILES.firstOrNull { candidate ->
                         g.getService(candidate.serviceUuid)?.getCharacteristic(candidate.txCharUuid) != null
                     }
@@ -334,7 +350,8 @@ class BleUartTransport(private val context: Context) : ByteTransport {
     private companion object {
         const val TAG = "RoverMEMS"
         const val RAW_NOTIFY_LOG_LIMIT = 50
-        const val SERVICE_DISCOVERY_TIMEOUT_MS = 4_000L
+        const val SERVICE_DISCOVERY_RETRY_MS = 1_500L
+        const val SERVICE_DISCOVERY_TIMEOUT_MS = 3_000L
         const val CCCD_WRITE_DELAY_MS = 400L
         // 成功時は接続〜通知有効化まで約2秒。以前は15秒待ってからエラーに
         // していたが、BleEcuDataSource側で自動再試行するので早めに見切る。
