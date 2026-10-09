@@ -20,6 +20,7 @@
  *
  * 本体LED:
  *   青の点滅 = スマホからの接続待ち
+ *   黄       = 接続直後の1秒間(サービス探索中)
  *   緑       = スマホと接続中
  *   白く一瞬 = ECUからデータを受信
  *
@@ -46,6 +47,15 @@ static const uint32_t RX_GAP_US = 1500;
 // 1回の通知の最大バイト数。アプリはMTUを交渉しないので既定の23-3=20。
 static const size_t NOTIFY_CHUNK = 20;
 
+// 接続間隔の提案(単位1.25ms)。20〜40msにすると探索やコマンド往復が速い。
+// 監視タイムアウトは単位10ms(400=4秒)。
+static const uint16_t CONN_INTERVAL_MIN = 0x10;
+static const uint16_t CONN_INTERVAL_MAX = 0x20;
+static const uint16_t CONN_LATENCY = 0;
+static const uint16_t CONN_TIMEOUT = 400;
+// 接続直後にLEDを黄色にしておく時間(サービス探索の確認用)
+static const uint32_t CONNECT_LED_MS = 1000;
+
 #define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NUS_RX_UUID      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // スマホ → ATOM
 #define NUS_TX_UUID      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  // ATOM → スマホ
@@ -61,6 +71,7 @@ uint8_t rxBuf[NOTIFY_CHUNK];
 size_t rxLen = 0;
 uint32_t lastRxMicros = 0;
 uint32_t ledFlashUntil = 0;
+volatile uint32_t connectedAtMs = 0;
 
 // LEDの書き換えは数十µsかかるので、色が変わった時だけ行う(UART受信を遅らせない)。
 static void setLed(uint8_t r, uint8_t g, uint8_t b) {
@@ -75,12 +86,23 @@ static void setLed(uint8_t r, uint8_t g, uint8_t b) {
 #endif
 }
 
+// 調査用: 接続・切断・MTU変更を時刻つきでシリアル(115200)に出す。
+// 1回目の接続だけ探索が無返事になる件の切り分けに使う。
 class ServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer *s) override {
+  void onConnect(BLEServer *s, esp_ble_gatts_cb_param_t *param) override {
+    connectedAtMs = millis();
     deviceConnected = true;
+    Serial.printf("[%lu ms] onConnect conn_id=%u\n",(unsigned long)connectedAtMs, param->connect.conn_id);
+    // ATOMの側から接続間隔を提案する(スマホ任せにしない)。
+    s->updateConnParams(param->connect.remote_bda, CONN_INTERVAL_MIN, CONN_INTERVAL_MAX,
+                        CONN_LATENCY, CONN_TIMEOUT);
   }
   void onDisconnect(BLEServer *s) override {
     deviceConnected = false;
+    Serial.printf("[%lu ms] onDisconnect\n",(unsigned long)millis());
+  }
+  void onMtuChanged(BLEServer *s, esp_ble_gatts_cb_param_t *param) override {
+    Serial.printf("[%lu ms] onMtuChanged mtu=%u\n",(unsigned long)millis(), param->mtu.mtu);
   }
 };
 
@@ -133,6 +155,9 @@ void setup() {
   BLEAdvertising *adv = BLEDevice::getAdvertising();
   adv->addServiceUUID(NUS_SERVICE_UUID);
   adv->setScanResponse(true);
+  // 推奨接続間隔を広告に入れる(単位1.25ms。ESP32の定番設定)。
+  adv->setMinPreferred(0x06);
+  adv->setMaxPreferred(0x12);
   BLEDevice::startAdvertising();
 
   Serial.printf("RoverMEMS bridge ready: %s\n", name);
@@ -156,7 +181,7 @@ void loop() {
     rxLen = 0;
     while (EcuSerial.available()) EcuSerial.read();
     BLEDevice::startAdvertising();
-    Serial.println("disconnected, advertising again");
+    Serial.printf("[%lu ms] advertising again\n",(unsigned long)millis());
   }
   if (deviceConnected && !wasConnected) {
     while (EcuSerial.available()) EcuSerial.read();
@@ -169,7 +194,8 @@ void loop() {
   if (now < ledFlashUntil) {
     setLed(20, 20, 20);
   } else if (deviceConnected) {
-    setLed(0, 20, 0);
+    if (now - connectedAtMs < CONNECT_LED_MS) setLed(20, 12, 0);
+    else setLed(0, 20, 0);
   } else {
     setLed(0, 0, ((now / 500) % 2) ? 20 : 0);
   }
