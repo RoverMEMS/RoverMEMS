@@ -225,7 +225,8 @@ private fun GaugeScreenContent(
 
     LaunchedEffect(isAnalogMode, reversedLandscape) {
         activity?.requestedOrientation = when {
-            !isAnalogMode -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            // シンプル・詳細は縦画面に固定(横にすると項目が見づらいため)
+            !isAnalogMode -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             reversedLandscape -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
             else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         }
