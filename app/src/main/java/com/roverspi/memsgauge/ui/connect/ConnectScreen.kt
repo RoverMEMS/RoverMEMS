@@ -224,6 +224,14 @@ fun ConnectScreen(
             ) {
                 Text(stringResource(R.string.connect_open_logs))
             }
+
+            // ベータ版のモニターさんが不具合を連絡するときに版を伝えられるように。
+            Text(
+                stringResource(R.string.app_version_label, com.roverspi.memsgauge.BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }

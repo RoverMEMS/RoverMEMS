@@ -15,6 +15,7 @@
     <!-- ConnectScreen -->
     <string name="connect_title">ローバーミニ MEMS診断</string>
     <string name="connect_open_logs">保存したログを見る</string>
+    <string name="app_version_label">バージョン %1$s（ベータ）</string>
     <string name="connect_select_source">データソースを選択してください</string>
     <string name="connect_demo_mode">デモモード</string>
     <string name="connect_usb">USB</string>
