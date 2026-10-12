@@ -35,6 +35,17 @@ data class MemsFrame7d(
         const val FRAME_SIZE = 32
         private const val UNKNOWN_TAIL_SIZE = 11
 
+        /**
+         * ECUが0x7Dに答えない間の代わり。換算後に0になる中立値(長期トリム128→0、
+         * 短期トリム100→0)で、[MemsData.frame7dAvailable]がfalseになる。
+         */
+        val UNAVAILABLE: MemsFrame7d by lazy {
+            val b = ByteArray(FRAME_SIZE)
+            b[11] = 128.toByte()
+            b[12] = 100.toByte()
+            parse(b)
+        }
+
         fun parse(bytes: ByteArray): MemsFrame7d {
             require(bytes.size == FRAME_SIZE) {
                 "Expected $FRAME_SIZE bytes for a 0x7D frame, got ${bytes.size}"

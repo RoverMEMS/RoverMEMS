@@ -74,7 +74,9 @@ data class MemsData(
     // Raw values MEMSFCR's analysis uses (isHotIdleFaulty / isIACFaulty), logged for the
     // log analyzer: 0x80 offset 0x10 ("idle hot") and 0x7D offset 0x13 ("idle speed offset").
     val idleHot: Int = 0,
-    val idleSpeedOffset: Int = 0
+    val idleSpeedOffset: Int = 0,
+    // false = ECUが0x7Dに答えず、0x7D由来の項目(ラムダ・トリム・パージ等)は中立値
+    val frame7dAvailable: Boolean = true
 ) {
     companion object {
         // Per MEMSFCR's ecu-data-values page: raw byte minus this offset gives Celsius.
@@ -84,7 +86,12 @@ data class MemsData(
         // Per MEMSFCR's rosco.go: short term fuel trim is centered on this raw value.
         private const val SHORT_TERM_TRIM_CENTER = 100
 
-        fun fromFrames(frame80: MemsFrame80, frame7d: MemsFrame7d, ecuVersion: EcuVersion): MemsData {
+        fun fromFrames(
+            frame80: MemsFrame80,
+            frame7d: MemsFrame7d,
+            ecuVersion: EcuVersion,
+            frame7dAvailable: Boolean = true
+        ): MemsData {
             return MemsData(
                 engineRpm = (frame80.engineRpmHi shl 8) or frame80.engineRpmLo,
                 coolantTempC = frame80.coolantTemp - TEMP_OFFSET_C,
@@ -123,7 +130,8 @@ data class MemsData(
                 dtc3 = frame7d.dtc3,
                 dtc4 = frame7d.dtc4,
                 idleHot = frame80.idleHot,
-                idleSpeedOffset = frame7d.idleSpeedOffset
+                idleSpeedOffset = frame7d.idleSpeedOffset,
+                frame7dAvailable = frame7dAvailable
             )
         }
     }

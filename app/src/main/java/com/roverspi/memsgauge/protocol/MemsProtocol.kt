@@ -25,6 +25,13 @@ class MemsProtocol(private val transport: ByteTransport) {
         const val BURST_PROBE_LISTEN_MS = 1500L
 
         const val FRAME_7D_EVERY = 2
+
+        // フレームの先頭バイト(全体のバイト数)として許す範囲。0x80は少なくとも
+        // dtc1(14バイト目)まで、0x7Dは先頭バイトだけあれば読み始められる。
+        const val MIN_FRAME_80 = 14
+        const val MIN_FRAME_7D = 2
+        const val MAX_FRAME_SIZE = 64
+        const val GIVE_UP_7D_AFTER = 2
     }
 
     /**
@@ -45,6 +52,9 @@ class MemsProtocol(private val transport: ByteTransport) {
         // つなぎ直した後は、前の接続の0x7Dを使い回さない
         cachedFrame7d = null
         readCount = 0
+        got7dEver = false
+        consecutive7dFailures = 0
+        skip7d = false
         if (!sendCommand(INIT_BYTE_A)) {
             Log.w(TAG, "initLink: INIT_BYTE_A (0xCA) got no valid echo")
             return null
@@ -151,30 +161,72 @@ class MemsProtocol(private val transport: ByteTransport) {
     private var cachedFrame7d: MemsFrame7d? = null
     private var readCount = 0
 
-    /** Requests the data frames and merges them into a [MemsData] snapshot. */
-    suspend fun readData(ecuVersion: EcuVersion): MemsData? {
-        if (!sendCommand(MemsDataCommand.REQ_DATA_80.byte)) return null
-        val bytes80 = transport.readExactly(MemsFrame80.FRAME_SIZE)
-        if (bytes80 == null) {
-            Log.w(TAG, "readData: frame80 body never arrived")
+    // 0x7Dに答えない(または形が違う)ECUのための状態。一度も0x7Dが取れていないまま
+    // 連続で失敗したら、その接続中は0x7Dを諦めて0x80だけで表示を続ける。
+    private var got7dEver = false
+    private var consecutive7dFailures = 0
+    private var skip7d = false
+
+    /**
+     * コマンドを送り、エコーの後ろの「先頭1バイト=フレーム全体のバイト数」に従って
+     * 返事を最後まで読む。フレーム長を28/32に決め打ちすると、長さの違うECU
+     * (92年式で「データ待機中」のまま動かない報告、10-12)で永遠に読み終わらないため。
+     * 参考: 有料版Rover MEMS ECU Diagnosticも先頭バイトの長さで読んでいる。
+     * 期待より短ければ0で埋め、長ければ切り捨てて[expectedSize]にそろえる。
+     */
+    private suspend fun readFrame(cmd: Int, expectedSize: Int, minSize: Int): ByteArray? {
+        if (!sendCommand(cmd)) return null
+        val first = transport.readExactly(1)
+        if (first == null) {
+            Log.w(TAG, "readFrame(0x%02X): size byte never arrived".format(cmd))
             return null
         }
+        val size = first[0].toInt() and 0xFF
+        if (size < minSize || size > MAX_FRAME_SIZE) {
+            Log.w(TAG, "readFrame(0x%02X): implausible frame size %d".format(cmd, size))
+            return null
+        }
+        val rest = if (size > 1) transport.readExactly(size - 1) else ByteArray(0)
+        if (rest == null) {
+            Log.w(TAG, "readFrame(0x%02X): body never arrived (size=%d)".format(cmd, size))
+            return null
+        }
+        if (size != expectedSize) {
+            Log.w(TAG, "readFrame(0x%02X): frame size %d differs from the usual %d".format(cmd, size, expectedSize))
+        }
+        return (first + rest).copyOf(expectedSize)
+    }
+
+    /** Requests the data frames and merges them into a [MemsData] snapshot. */
+    suspend fun readData(ecuVersion: EcuVersion): MemsData? {
+        val bytes80 = readFrame(MemsDataCommand.REQ_DATA_80.byte, MemsFrame80.FRAME_SIZE, MIN_FRAME_80) ?: return null
         val frame80 = MemsFrameParser.parseFrame80(bytes80, ecuVersion)
 
         var frame7d = cachedFrame7d
-        if (frame7d == null || readCount % FRAME_7D_EVERY == 0) {
-            if (!sendCommand(MemsDataCommand.REQ_DATA_7D.byte)) return null
-            val bytes7d = transport.readExactly(MemsFrame7d.FRAME_SIZE)
-            if (bytes7d == null) {
-                Log.w(TAG, "readData: frame7d body never arrived")
-                return null
+        var frame7dAvailable = true
+        if (!skip7d && (frame7d == null || readCount % FRAME_7D_EVERY == 0)) {
+            val bytes7d = readFrame(MemsDataCommand.REQ_DATA_7D.byte, MemsFrame7d.FRAME_SIZE, MIN_FRAME_7D)
+            if (bytes7d != null) {
+                frame7d = MemsFrameParser.parseFrame7d(bytes7d, ecuVersion)
+                cachedFrame7d = frame7d
+                got7dEver = true
+                consecutive7dFailures = 0
+            } else {
+                consecutive7dFailures++
+                if (!got7dEver && consecutive7dFailures >= GIVE_UP_7D_AFTER) {
+                    skip7d = true
+                    Log.w(TAG, "readData: ECU does not answer 0x7D -- continuing with the 0x80 frame only")
+                }
             }
-            frame7d = MemsFrameParser.parseFrame7d(bytes7d, ecuVersion)
-            cachedFrame7d = frame7d
+        }
+        if (frame7d == null) {
+            // 0x7Dが取れない間も、0x80のデータは表示する(取れない項目は中立値)。
+            frame7d = MemsFrame7d.UNAVAILABLE
+            frame7dAvailable = false
         }
         readCount++
 
-        return MemsData.fromFrames(frame80, frame7d, ecuVersion)
+        return MemsData.fromFrames(frame80, frame7d, ecuVersion, frame7dAvailable)
     }
 
     /** Sends the fault-code-clear command and confirms the ECU's one-byte reply. */
