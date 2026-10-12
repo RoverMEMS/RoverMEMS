@@ -9,6 +9,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.util.Log
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -53,10 +54,21 @@ class UsbDeviceScanner(private val context: Context) {
             } else {
                 0
             }
-            val permissionIntent = PendingIntent.getBroadcast(
-                context, 0, Intent(ACTION_USB_PERMISSION), piFlags
-            )
-            usbManager.requestPermission(device, permissionIntent)
+            // Android 14+ (targetSdk 34+) throws SecurityException for a mutable
+            // PendingIntent wrapping an implicit Intent, so the permission dialog
+            // never appeared on those phones. Making the Intent explicit (own
+            // package) avoids that; FLAG_MUTABLE is still required so the system
+            // can add EXTRA_PERMISSION_GRANTED.
+            try {
+                val permissionIntent = PendingIntent.getBroadcast(
+                    context, 0, Intent(ACTION_USB_PERMISSION).setPackage(context.packageName), piFlags
+                )
+                usbManager.requestPermission(device, permissionIntent)
+            } catch (e: Exception) {
+                Log.e("UsbDeviceScanner", "requestPermission failed", e)
+                runCatching { context.unregisterReceiver(receiver) }
+                if (continuation.isActive) continuation.resume(false)
+            }
         }
     }
 
