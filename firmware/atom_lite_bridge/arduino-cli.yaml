@@ -1,0 +1,8 @@
+board_manager:
+    additional_urls: []
+directories:
+    data: C:\Arduino15
+    downloads: C:\Arduino15\staging
+    user: C:\Arduino15\sketchbook
+build_cache:
+    path: C:\Arduino15\build_cache

@@ -1,0 +1,2 @@
+# keep Windows batch files as CRLF in the repository (ZIP downloads need it)
+*.bat -text
