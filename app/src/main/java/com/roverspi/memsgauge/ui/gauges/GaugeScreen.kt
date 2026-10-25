@@ -421,7 +421,11 @@ private fun EcuStatusBadge(
         ConnectionState.DISCONNECTED -> stringResource(R.string.ecu_status_disconnected)
         ConnectionState.CONNECTING -> stringResource(R.string.ecu_status_connecting)
         ConnectionState.CONNECTED -> when (version) {
-            EcuVersion.MEMS_1_3 -> stringResource(R.string.ecu_status_mems13)
+            // 1.3/1.6は番号では見分けられないため、「1.3検出」とは出さず番号だけ表示する
+            EcuVersion.MEMS_1_3 -> {
+                val idSuffix = ecuIdRaw?.let { stringResource(R.string.ecu_status_unknown_id_suffix, it) } ?: ""
+                stringResource(R.string.ecu_status_unknown, idSuffix)
+            }
             // Show the raw ID bytes instead of guessing 1.3/1.6 from an
             // unconfirmed ID (see EcuVersion).
             EcuVersion.UNKNOWN -> {
