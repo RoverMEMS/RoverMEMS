@@ -1,5 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MEMS Log Diagnostics</title>
 <meta name="description" content="Rover Mini SPi(MEMS 1.3)の走行ログから異常の可能性と確認ポイントを提示する無料ツール。MemsFCRの公開情報を参考にしています。">
 <style>
@@ -413,6 +414,42 @@
     line-height:1.6;
   }
   footer strong{color:var(--text);}
+  /* スマホ向け(11-07): 文字を少し大きく、ボタンは押しやすく横いっぱいに */
+  @media (max-width:600px){
+    body{padding:0 12px 48px; -webkit-text-size-adjust:100%;}
+    header.mast{padding-block:18px 12px; gap:8px 10px;}
+    .mast-sub{font-size:13.5px;}
+    .mast-badge{margin-left:0;}
+    #langToggle{margin-left:auto;}
+    section{margin-top:18px;}
+    .about{padding:12px 14px; font-size:14px;}
+    .glossary summary{padding:12px 14px; font-size:15px;}
+    .glossary dl{padding:12px 14px 14px;}
+    .glossary dt{font-size:15px;}
+    .glossary dd{font-size:14px;}
+    .controls{padding:12px; gap:8px;}
+    .controls .btn{flex:1 1 100%; min-height:46px; font-size:15px; text-align:center; display:flex; align-items:center; justify-content:center;}
+    .file-name{width:100%; font-size:13px; word-break:break-all;}
+    .controls .hint{font-size:13px;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .stat{padding:12px 14px;}
+    h2.section-title{font-size:16px;}
+    .finding{padding:12px 12px 13px; gap:10px;}
+    .finding-title{font-size:15.5px;}
+    .finding-desc{font-size:14.5px;}
+    .finding-checks{font-size:14px;}
+    .readout{font-size:14px;}
+    .term-toggle{font-size:13.5px; padding:4px 0;}
+    .term-body{font-size:13.5px;}
+    .rangebar{max-width:none;}
+    .finding-chart{align-items:stretch;}
+    .finding-chart canvas{width:100%; height:72px;}
+    .modal{padding:8px;}
+    .modal-card{padding:12px 12px 14px; max-height:calc(100vh - 16px);}
+    .ac-tools .btn{min-height:40px;}
+    table.chantable{font-size:13px;}
+    footer{font-size:13px;}
+  }
 </style>
 
 <div class="wrap">
@@ -528,6 +565,8 @@
 <script>
 (function(){
   "use strict";
+  // タッチ操作の端末(スマホ・タブレット)か。案内文の「クリック/タップ」を切り替える
+  var IS_TOUCH = !!(window.matchMedia && matchMedia("(pointer:coarse)").matches);
 
   /* ---------- language state ---------- */
   var LANG = (function(){ try{ return localStorage.getItem("memsLang")||"ja"; }catch(e){ return "ja"; } })();
@@ -1291,7 +1330,7 @@
         termHtml +
       '</div>'+
       '<div class="finding-chart"><canvas></canvas><div class="cap mono">'+(f.channel?colLabel(f.channel):"")+'</div>'+
-        (f.series ? '<div class="zoom-hint">🔍 '+T("クリックで拡大","Click to enlarge")+'</div>' : '')+'</div>';
+        (f.series ? '<div class="zoom-hint">🔍 '+(IS_TOUCH ? T("タップで拡大","Tap to enlarge") : T("クリックで拡大","Click to enlarge"))+'</div>' : '')+'</div>';
     var canvas = el.querySelector("canvas");
     requestAnimationFrame(function(){
       drawSpark(canvas, f.series, f.flagIdx, f.threshold, sevColorVar(f.severity));
@@ -1975,10 +2014,49 @@
     setLang(LANG==="ja" ? "en" : "ja");
   });
 
+  // スマホでは用語解説を閉じておく(開いたままだと結果がずっと下になる)。PCは今までどおり開いた状態
+  if (window.matchMedia && matchMedia("(max-width:600px)").matches){
+    document.getElementById("glossaryPanel").removeAttribute("open");
+  }
+
   // initial state at rest: sample data already analyzed
   document.documentElement.lang = LANG;
   applyStaticI18n();
   renderGlossary();
-  newSample();
+
+  // アプリの「解析する」から開いた時: URLの # の後ろにログ(圧縮+base64url)が入っている。
+  // # より後ろはサーバーに送られないので、ログは端末の外に出ない。
+  // 形式: #log=<raw deflate を base64url>&name=<ファイル名(URLエンコード)>
+  function loadFromHash(){
+    var h = location.hash.replace(/^#/, "");
+    if (h.indexOf("log=") < 0) return false;
+    var params = {};
+    h.split("&").forEach(function(kv){ var i = kv.indexOf("="); if (i > 0) params[kv.slice(0,i)] = kv.slice(i+1); });
+    var name = params.name ? decodeURIComponent(params.name) : "log.csv";
+    try {
+      var b64 = params.log.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4) b64 += "=";
+      var bin = atob(b64);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      new Response(stream).text().then(function(text){
+        lastSource = {kind:"file", text:text, name:name};
+        run(text, name);
+        // 再読み込みやURLの共有でログが残らないよう、# を消しておく
+        history.replaceState(null, "", location.pathname + location.search);
+        var target = document.getElementById("statsSection");
+        if (target && target.scrollIntoView) target.scrollIntoView({behavior:"smooth", block:"start"});
+      }).catch(function(){
+        newSample();
+        alert(T("アプリから渡されたログを読めませんでした。「ログファイルを選ぶ」から開いてください。",
+                "Could not read the log passed from the app. Please open it with the file button."));
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  if (!loadFromHash()) newSample();
 })();
 </script>
